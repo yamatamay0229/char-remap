@@ -148,14 +148,52 @@ export function patchSelectedEdgeData(patch){
   e.data({ ...e.data(), ...patch });
 }
 
+// ---------- Color utils: keep hue/sat, minimally adjust lightness to meet contrast ----------
 function hexToRgb(h){
   if (!h) return null;
-  const m = h.trim().toLowerCase();
-  const s = m.startsWith('#') ? m.slice(1) : m;
+  const s = h.trim().replace(/^#/, '');
   if (![3,6].includes(s.length)) return null;
   const n = s.length === 3 ? s.split('').map(x=>x+x).join('') : s;
-  const r = parseInt(n.slice(0,2),16), g = parseInt(n.slice(2,4),16), b = parseInt(n.slice(4,6),16);
-  return {r,g,b};
+  return { r: parseInt(n.slice(0,2),16), g: parseInt(n.slice(2,4),16), b: parseInt(n.slice(4,6),16) };
+}
+function rgbToHex({r,g,b}){
+  const to = v => v.toString(16).padStart(2,'0');
+  return `#${to(Math.round(r))}${to(Math.round(g))}${to(Math.round(b))}`;
+}
+function rgbToHsl({r,g,b}){
+  r/=255; g/=255; b/=255;
+  const max=Math.max(r,g,b), min=Math.min(r,g,b);
+  let h, s, l=(max+min)/2;
+  if (max===min){ h=s=0; }
+  else {
+    const d=max-min;
+    s = l>0.5 ? d/(2-max-min) : d/(max+min);
+    switch(max){
+      case r: h=(g-b)/d+(g<b?6:0); break;
+      case g: h=(b-r)/d+2; break;
+      case b: h=(r-g)/d+4; break;
+    }
+    h/=6;
+  }
+  return {h,s,l};
+}
+function hslToRgb({h,s,l}){
+  if (s===0){
+    const v=l*255; return {r:v,g:v,b:v};
+  }
+  const hue2rgb=(p,q,t)=>{
+    if(t<0) t+=1; if(t>1) t-=1;
+    if(t<1/6) return p+(q-p)*6*t;
+    if(t<1/2) return q;
+    if(t<2/3) return p+(q-p)*(2/3 - t)*6;
+    return p;
+  };
+  const q = l<0.5 ? l*(1+s) : l+s-l*s;
+  const p = 2*l - q;
+  const r = hue2rgb(p,q,h+1/3);
+  const g = hue2rgb(p,q,h);
+  const b = hue2rgb(p,q,h-1/3);
+  return { r:r*255, g:g*255, b:b*255 };
 }
 function relLuminance({r,g,b}){
   const s = [r,g,b].map(v=>v/255).map(v => v<=0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4));
@@ -168,13 +206,46 @@ function contrastRatio(hex1, hex2){
   const [a,b] = L1 >= L2 ? [L1,L2] : [L2,L1];
   return (a + 0.05) / (b + 0.05);
 }
-function ensureContrast(hex, bg, min=3){
+
+/**
+ * 指定色hexを基準に、背景bgに対して minコントラスト を満たすよう
+ * 明度(L)のみ最小移動で調整。H/Sは維持。
+ * @returns 調整後のhex
+ */
+function adjustContrastNear(hex, bg, min=3){
   if (!hex) return null;
-  try{
-    const cr = contrastRatio(hex, bg);
-    if (cr >= min) return hex;
-    // 背景に対して見える無難色にフォールバック（背景が明るければ濃色、暗ければ淡色）
-    const bgLum = relLuminance(hexToRgb(bg));
-    return bgLum > 0.5 ? '#111827' : '#f3f4f6';
-  }catch{return hex;}
+  const origRgb = hexToRgb(hex), bgRgb = hexToRgb(bg);
+  if (!origRgb || !bgRgb) return hex;
+  // 既に満たしていればそのまま
+  if (contrastRatio(hex, bg) >= min) return hex;
+
+  const hsl = rgbToHsl(origRgb);
+  const tryDir = (dir)=>{ // dir: +1 (明るく) / -1 (暗く)
+    let lo = hsl.l, hi = dir>0 ? 1 : 0;
+    // 二分探索で最小移動点を探す
+    for (let i=0;i<18;i++){
+      const mid = (lo+hi)/2;
+      const testHex = rgbToHex(hslToRgb({h:hsl.h, s:hsl.s, l:mid}));
+      const ok = contrastRatio(testHex, bg) >= min;
+      if (dir>0){ // 明るく
+        if (ok) hi = mid; else lo = mid;
+      } else {   // 暗く
+        if (ok) lo = mid; else hi = mid;
+      }
+    }
+    const lNew = dir>0 ? hi : lo;
+    const outHex = rgbToHex(hslToRgb({h:hsl.h, s:hsl.s, l:lNew}));
+    return { hex: outHex, delta: Math.abs(lNew - hsl.l), ok: contrastRatio(outHex, bg) >= min, l:lNew };
+  };
+
+  const up   = tryDir(+1);
+  const down = tryDir(-1);
+
+  // どちらも満たせる→移動量が小さい方。片方だけ満たせる→そちら。
+  if (up.ok && down.ok) return up.delta <= down.delta ? up.hex : down.hex;
+  if (up.ok) return up.hex;
+  if (down.ok) return down.hex;
+
+  // どちらも満たせない（極端な背景と極端な色）→ “より近い方” を返す
+  return up.delta <= down.delta ? up.hex : down.hex;
 }
