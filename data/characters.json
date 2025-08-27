@@ -1,1 +1,4 @@
-[]
+[
+  { "id": "altina", "name": "アルティナ", "image": "./images/altina.png" },
+  { "id": "uruu",   "name": "ウルウ",     "image": "./images/uruu.jpg" }
+]
