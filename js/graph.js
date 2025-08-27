@@ -118,7 +118,7 @@ export function deleteSelection(){
 // ---- style functions (data優先の色) ----
 function nodeBgColor(ele){
   const raw = ele.data('nodeColor') || '#f3f4f6';
-  return settings.autoContrast ? adjustContrastNear(raw, settings.backgroundColor, 1.5) : raw;
+  return settings.autoContrast ? adjustContrastNear(raw, settings.backgroundColor, 1.5) : '#FFFFFF';
 }
 function nodeTextColor(ele){
   const raw = ele.data('textColor') || '#111827';
@@ -245,8 +245,6 @@ function adjustContrastNear(hex, bg, min=3){
 
   const up = tryBrighten();
   const down = tryDarken();
-
-  return down.hex;
 
   if (up.ok && down.ok) return up.delta <= down.delta ? up.hex : down.hex;
   if (up.ok) return up.hex;
