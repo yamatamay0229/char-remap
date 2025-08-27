@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "characters": [
+    { "id": "altina", "name": "アルティナ", "image": "./images/altina.png", "x": 100, "y": 200 },
+    { "id": "uruu",   "name": "ウルウ",     "image": "./images/uruu.jpg" }
+  ],
+  "relations": [
+    { "from": "altina", "to": "uruu", "label": "保護", "strength": 5, "mutual": true, "type": "感情" }
+  ]
+}
