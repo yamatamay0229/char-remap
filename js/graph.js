@@ -237,7 +237,7 @@ function adjustContrastNear(hex, bg, min=3){
     for (let i=0;i<18;i++){
       const mid = (lo+hi)/2;
       const test = rgbToHex(hslToRgb({h:hsl.h, s:hsl.s, l:mid}));
-      if (contrastRatio(test, bg) >= min) hi = mid; else lo = mid;
+      if (contrastRatio(test, bg) >= min) lo = mid; else hi = mid;
     }
     const out = rgbToHex(hslToRgb({h:hsl.h, s:hsl.s, l:hi}));
     return { hex: out, delta: Math.abs(hi - hsl.l), ok: contrastRatio(out, bg) >= min };
