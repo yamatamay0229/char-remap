@@ -1,6 +1,14 @@
-import { state, setData, addCharacter, addRelation } from './state.js';
-import { addNodeToGraph, addEdgeToGraph, deleteSelection,
-         layoutRandom, layoutCircle, layoutCenterOnSelection, reloadGraphFromState } from './graph.js';
+import {
+  state, setData, setCharacterTags,
+  addCharacter, updateCharacter, addRelation, updateRelation,
+  findRelationIndex
+} from './state.js';
+
+import {
+  addNodeToGraph, addEdgeToGraph, deleteSelection,
+  layoutRandom, layoutCircle, layoutCenterOnSelection,
+  reloadGraphFromState, patchSelectedNodeData, patchSelectedEdgeData
+} from './graph.js';
 
 export function wireUI(){
   // レイアウト
@@ -8,44 +16,74 @@ export function wireUI(){
   document.getElementById('btn-circle').onclick = layoutCircle;
   document.getElementById('btn-center').onclick = layoutCenterOnSelection;
 
-  // 人物追加
+  // ---- 人物追加ダイアログ ----
   const dlgP = document.getElementById('dlg-person');
   const formP = document.getElementById('form-person');
-  document.getElementById('btn-add-person').onclick = () => { formP.reset(); dlgP.showModal(); };
+  const pAttrsBox = document.getElementById('p-attrs');
+
+  function renderAttrInputs(container, values={}){
+    container.innerHTML = '';
+    state.characterTags.forEach(key=>{
+      const id = `attr-${key}`;
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.innerHTML = `<label for="${id}">${escapeHtml(key)}</label>
+                       <input id="${id}" name="${key}" type="text" value="${escapeHtml(values[key]||'')}">`;
+      container.appendChild(row);
+    });
+  }
+
+  document.getElementById('btn-add-person').onclick = () => {
+    formP.reset();
+    renderAttrInputs(pAttrsBox, {});
+    dlgP.showModal();
+  };
   document.getElementById('p-cancel').onclick = () => dlgP.close();
+
   formP.onsubmit = (e)=>{
     e.preventDefault();
     try{
       const id    = document.getElementById('p-id').value.trim();
       const name  = document.getElementById('p-name').value.trim();
       const image = (document.getElementById('p-image').value.trim() || null);
+      const nodeColor = (document.getElementById('p-bg').value || null);
+      const textColor = (document.getElementById('p-fg').value || null);
       if (!id || !name) return;
-      addCharacter({ id, name, image });
-      addNodeToGraph({ id, name, image });
+
+      const attrs = {};
+      state.characterTags.forEach(k=>{
+        const el = document.getElementById(`attr-${k}`);
+        attrs[k] = el ? el.value : '';
+      });
+
+      addCharacter({ id, name, image, nodeColor, textColor, attrs });
+      addNodeToGraph({ id, name, image, nodeColor, textColor });
       dlgP.close();
     }catch(err){ alert(err.message || String(err)); }
   };
 
-  // 関係追加
+  // ---- 関係追加ダイアログ ----
   const dlgR = document.getElementById('dlg-relation');
   const formR = document.getElementById('form-relation');
   const selFrom = document.getElementById('r-from');
   const selTo   = document.getElementById('r-to');
 
-  function refreshSelects(){
-    const opts = state.characters.map(c => `<option value="${escapeHtml(String(c.id ?? c.name))}">${escapeHtml(c.name)}</option>`).join('');
+  function refreshPersonSelects(){
+    const opts = state.characters
+      .map(c => `<option value="${escapeHtml(String(c.id ?? c.name))}">${escapeHtml(c.name)}</option>`).join('');
     selFrom.innerHTML = opts; selTo.innerHTML = opts;
   }
 
   document.getElementById('btn-add-relation').onclick = () => {
     if (state.characters.length < 2){ alert('人物が2人以上必要です'); return; }
-    refreshSelects();
+    refreshPersonSelects();
     formR.reset();
     document.getElementById('r-strength').value = 3;
     document.getElementById('r-mutual').value = "false";
     dlgR.showModal();
   };
   document.getElementById('r-cancel').onclick = () => dlgR.close();
+
   formR.onsubmit = (e)=>{
     e.preventDefault();
     try{
@@ -54,54 +92,177 @@ export function wireUI(){
       const strength = Math.max(1, Math.min(5, Number(document.getElementById('r-strength').value || 3)));
       const type = document.getElementById('r-type').value.trim();
       const mutual = document.getElementById('r-mutual').value === "true";
+      const edgeColor = (document.getElementById('r-line').value || null);
+      const textColor = (document.getElementById('r-text').value || null);
 
-      addRelation({ from, to, label, strength, type, mutual });
-      addEdgeToGraph({ from, to, label, strength, type, mutual });
+      if (from === to){ alert('同一人物同士は選べません'); return; }
+
+      addRelation({ from, to, label, strength, type, mutual, edgeColor, textColor });
+      addEdgeToGraph({ from, to, label, strength, type, mutual, edgeColor, textColor });
       dlgR.close();
     }catch(err){ alert(err.message || String(err)); }
   };
 
-  // 削除
+  // ---- 削除 ----
   document.getElementById('btn-delete').onclick = deleteSelection;
 
-// ---- JSON エクスポート ----
-document.getElementById('btn-export-json').onclick = () => {
-  const payload = { version: 1, characters: state.characters, relations: state.relations };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'char-relmap.json';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(a.href);
-};
-
-// ---- JSON インポート ----
-const fileInput = document.getElementById('file-import-json');
-document.getElementById('btn-import-json').onclick = () => fileInput.click();
-fileInput.onchange = (e) => {
-  const file = e.target.files?.[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const json = JSON.parse(String(reader.result));
-      // バリデーションざっくり
-      if (!json || !Array.isArray(json.characters) || !Array.isArray(json.relations)) {
-        alert('フォーマットが不正です（characters/relations が見つかりません）');
-        return;
-      }
-      setData(json.characters, json.relations);
-      reloadGraphFromState();
-    } catch (err) {
-      alert('JSONの読み込みに失敗しました: ' + (err?.message || err));
-    } finally {
-      fileInput.value = ''; // 同じファイルを続けて選べるようリセット
-    }
+  // ---- 属性タグ管理 ----
+  document.getElementById('btn-attr-tags').onclick = () => {
+    const current = state.characterTags.join(', ');
+    const input = prompt('属性タグをカンマ区切りで指定してください（例: 性格, 体格, 役割）', current);
+    if (input == null) return;
+    const tags = input.split(',').map(s => s.trim()).filter(Boolean);
+    setCharacterTags(tags);
+    // 追加ダイアログの入力UI更新
+    renderAttrInputs(pAttrsBox, {});
   };
-  reader.readAsText(file);
-};
 
+  // ---- JSON Import/Export ----
+  document.getElementById('btn-export-json').onclick = () => {
+    const payload = { version: 1, characterTags: state.characterTags, characters: state.characters, relations: state.relations };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'char-relmap.json';
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+  };
+  const fileInput = document.getElementById('file-import-json');
+  document.getElementById('btn-import-json').onclick = () => fileInput.click();
+  fileInput.onchange = (e) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const json = JSON.parse(String(reader.result));
+        if (!json || !Array.isArray(json.characters) || !Array.isArray(json.relations)) {
+          alert('フォーマットが不正です（characters/relations が見つかりません）'); return;
+        }
+        if (Array.isArray(json.characterTags)) setCharacterTags(json.characterTags);
+        setData(json.characters, json.relations);
+        // attrs 不足分を補正
+        state.characters.forEach(c => { if (!c.attrs) c.attrs = {}; state.characterTags.forEach(k=>{ if(!(k in c.attrs)) c.attrs[k]=''; }); });
+        reloadGraphFromState();
+      } catch (err) {
+        alert('JSONの読み込みに失敗: ' + (err?.message || err));
+      } finally {
+        fileInput.value = '';
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // ---- 選択編集（ノードまたはエッジ1つ）----
+  const btnEdit = document.getElementById('btn-edit');
+  const dlgE = document.getElementById('dlg-edit');
+  const formE = document.getElementById('form-edit');
+  const editFields = document.getElementById('edit-fields');
+
+  btnEdit.onclick = () => {
+    const nSel = cySelectCount('node'), eSel = cySelectCount('edge');
+    if (nSel + eSel !== 1){ alert('人物または関係を1つ選択してください'); return; }
+    editFields.innerHTML = '';
+    if (nSel === 1) openEditNode();
+    else openEditEdge();
+  };
+
+  document.getElementById('e-cancel').onclick = () => dlgE.close();
+
+  function openEditNode(){
+    const n = getSelected('node');
+    const id = n.id();
+    const data = n.data();
+    const char = state.characters.find(c => String(c.id ?? c.name) === id);
+    const attrs = char?.attrs || {};
+
+    document.getElementById('edit-title').textContent = '人物を編集';
+
+    const html = `
+      <div class="row"><label>ID</label><input id="e-id" type="text" value="${escapeHtml(id)}" disabled></div>
+      <div class="row"><label>名前</label><input id="e-name" type="text" value="${escapeHtml(data.name||'')}"></div>
+      <div class="row"><label>画像URL</label><input id="e-image" type="text" value="${escapeHtml(data.image||'')}"></div>
+      <div class="row"><label>背景色</label><input id="e-bg" type="color" value="${escapeColor(data.nodeColor||'#f3f4f6')}"></div>
+      <div class="row"><label>文字色</label><input id="e-fg" type="color" value="${escapeColor(data.textColor||'#111827')}"></div>
+      <fieldset class="modal"><legend class="muted">属性（共通タグ）</legend>
+        ${state.characterTags.map(key => `
+          <div class="row"><label>${escapeHtml(key)}</label>
+            <input id="e-attr-${key}" type="text" value="${escapeHtml(attrs[key]||'')}">
+          </div>
+        `).join('')}
+      </fieldset>
+    `;
+    editFields.innerHTML = html;
+
+    formE.onsubmit = (e)=>{
+      e.preventDefault();
+      const name  = getVal('e-name');
+      const image = getVal('e-image') || null;
+      const nodeColor = getVal('e-bg') || null;
+      const textColor = getVal('e-fg') || null;
+
+      const newAttrs = {};
+      state.characterTags.forEach(k=>{
+        newAttrs[k] = (document.getElementById(`e-attr-${k}`)?.value) ?? '';
+      });
+
+      // state 更新
+      updateCharacter(id, { name, image, nodeColor, textColor, attrs: newAttrs });
+      // グラフ更新
+      patchSelectedNodeData({ name, image, nodeColor, textColor });
+      dlgE.close();
+    };
+
+    dlgE.showModal();
+  }
+
+  function openEditEdge(){
+    const e = getSelected('edge');
+    const d = e.data();
+    document.getElementById('edit-title').textContent = '関係を編集';
+
+    const html = `
+      <div class="row"><label>From</label><input id="e-from" type="text" value="${escapeHtml(d.source)}" disabled></div>
+      <div class="row"><label>To</label><input id="e-to" type="text" value="${escapeHtml(d.target)}" disabled></div>
+      <div class="row"><label>関係名</label><input id="e-label" type="text" value="${escapeHtml(d.label||'')}"></div>
+      <div class="row"><label>強さ（1-5）</label><input id="e-strength" type="number" min="1" max="5" value="${Number(d.strength||3)}"></div>
+      <div class="row"><label>種別</label><input id="e-type" type="text" value="${escapeHtml(d.type||'')}"></div>
+      <div class="row"><label>相互</label>
+        <select id="e-mutual">
+          <option value="false" ${!d.mutual?'selected':''}>いいえ</option>
+          <option value="true"  ${d.mutual?'selected':''}>はい</option>
+        </select>
+      </div>
+      <div class="row"><label>線色</label><input id="e-line" type="color" value="${escapeColor(d.edgeColor||'#6b7280')}"></div>
+      <div class="row"><label>文字色</label><input id="e-text" type="color" value="${escapeColor(d.textColor||'#111827')}"></div>
+    `;
+    editFields.innerHTML = html;
+
+    formE.onsubmit = (ev)=>{
+      ev.preventDefault();
+      const label = getVal('e-label');
+      const strength = Math.max(1, Math.min(5, Number(getVal('e-strength')||3)));
+      const type = getVal('e-type');
+      const mutual = (getVal('e-mutual') === 'true');
+      const edgeColor = getVal('e-line') || null;
+      const textColor = getVal('e-text') || null;
+
+      const idx = findRelationIndex(r =>
+        r.from === d.source && r.to === d.target && r.label === d.label && Number(r.strength||3) === Number(d.strength||3)
+      );
+      if (idx >= 0){
+        updateRelation(idx, { label, strength, type, mutual, edgeColor, textColor });
+      }
+      patchSelectedEdgeData({ label, strength, type, mutual, edgeColor, textColor });
+      dlgE.close();
+    };
+
+    dlgE.showModal();
+  }
+
+  // ---- Import/Export wiring is above (unchanged from previous message) ----
 }
 
-function escapeHtml(s){ return s.replace(/[&<>"']/g, m => ({'&':'&','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+// ---- helpers ----
+function cySelectCount(kind){ return window.cy?.$(`${kind}:selected`).length || 0; }
+function getSelected(kind){ return window.cy?.$(`${kind}:selected`)[0]; }
+function getVal(id){ return (document.getElementById(id)?.value || '').trim(); }
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function escapeColor(s){ try{ if(!s) return '#000000'; const c=String(s); return c.startsWith('#')?c:'#000000'; }catch{return '#000000'} }
