@@ -1,4 +1,4 @@
-import { GRID, COLOR_BY_TYPE, state, removeCharacterById, removeRelationPredicate } from './state.js';
+import { GRID, COLOR_BY_TYPE, state, removeCharacterById, removeRelationPredicate, settings } from './state.js';
 
 let cy;
 
@@ -117,16 +117,23 @@ export function deleteSelection(){
 
 // ---- style functions (data優先の色) ----
 function nodeBgColor(ele){
-  return ele.data('nodeColor') || '#f3f4f6';
+  const raw = ele.data('nodeColor') || '#f3f4f6';
+  return settings.autoContrast ? ensureContrast(raw, settings.backgroundColor, 1.5) : raw;
 }
 function nodeTextColor(ele){
-  return ele.data('textColor') || '#111827';
+  const raw = ele.data('textColor') || '#111827';
+  // ノード文字はノード背景とコントラストを見る
+  const bg = nodeBgColor(ele);
+  return settings.autoContrast ? ensureContrast(raw, bg, 3) : raw;
 }
 function edgeLineColor(ele){
-  return ele.data('edgeColor') || (COLOR_BY_TYPE[ele.data('type')] || '#6b7280');
+  const raw = ele.data('edgeColor') || (COLOR_BY_TYPE[ele.data('type')] || '#6b7280');
+  return settings.autoContrast ? ensureContrast(raw, settings.backgroundColor, 3) : raw;
 }
 function edgeTextColor(ele){
-  return ele.data('textColor') || '#111827';
+  const raw = ele.data('textColor') || '#111827';
+  // エッジラベルは白背景（styleで#fff）上に乗るので、それに対するコントラストを見る
+  return settings.autoContrast ? ensureContrast(raw, '#ffffff', 3) : raw;
 }
 
 // 編集適用用：選択中ノード/エッジの data を差し替える
@@ -139,4 +146,35 @@ export function patchSelectedEdgeData(patch){
   const sel = cy.$('edge:selected'); if (!sel.length) return;
   const e = sel[0];
   e.data({ ...e.data(), ...patch });
+}
+
+function hexToRgb(h){
+  if (!h) return null;
+  const m = h.trim().toLowerCase();
+  const s = m.startsWith('#') ? m.slice(1) : m;
+  if (![3,6].includes(s.length)) return null;
+  const n = s.length === 3 ? s.split('').map(x=>x+x).join('') : s;
+  const r = parseInt(n.slice(0,2),16), g = parseInt(n.slice(2,4),16), b = parseInt(n.slice(4,6),16);
+  return {r,g,b};
+}
+function relLuminance({r,g,b}){
+  const s = [r,g,b].map(v=>v/255).map(v => v<=0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4));
+  return 0.2126*s[0] + 0.7152*s[1] + 0.0722*s[2];
+}
+function contrastRatio(hex1, hex2){
+  const c1 = hexToRgb(hex1), c2 = hexToRgb(hex2);
+  if (!c1 || !c2) return 1;
+  const L1 = relLuminance(c1), L2 = relLuminance(c2);
+  const [a,b] = L1 >= L2 ? [L1,L2] : [L2,L1];
+  return (a + 0.05) / (b + 0.05);
+}
+function ensureContrast(hex, bg, min=3){
+  if (!hex) return null;
+  try{
+    const cr = contrastRatio(hex, bg);
+    if (cr >= min) return hex;
+    // 背景に対して見える無難色にフォールバック（背景が明るければ濃色、暗ければ淡色）
+    const bgLum = relLuminance(hexToRgb(bg));
+    return bgLum > 0.5 ? '#111827' : '#f3f4f6';
+  }catch{return hex;}
 }
