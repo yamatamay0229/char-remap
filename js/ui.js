@@ -101,14 +101,15 @@ export function wireUI(){
       addEdgeToGraph({ from, to, label, strength, type, mutual, edgeColor, textColor });
       dlgR.close();
     }catch(err){ alert(err.message || String(err)); }
-
-    const chkAC = document.getElementById('chk-autocontrast');
-    if (chkAC) {
-      chkAC.checked = settings.autoContrast;
-      chkAC.addEventListener('change', () => { settings.autoContrast = chkAC.checked; });
-    }
   };
 
+const chkAC = document.getElementById('chk-autocontrast');
+if (chkAC) {
+  chkAC.checked = settings.autoContrast;
+  chkAC.addEventListener('change', () => { settings.autoContrast = chkAC.checked; });
+}
+
+  
   // ---- 削除 ----
   document.getElementById('btn-delete').onclick = deleteSelection;
 
