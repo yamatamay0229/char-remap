@@ -246,6 +246,5 @@ function adjustContrastNear(hex, bg, min=3){
   const down = tryDarken();
 
   // どちらが元に近いかで選ぶ
-  return down.hex;
-  //return up.delta <= down.delta ? up.hex : down.hex;
+  return up.delta <= down.delta ? up.hex : down.hex;
 }
