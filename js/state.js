@@ -64,3 +64,8 @@ export function findRelationIndex(pred){
 export function removeRelationPredicate(pred){
   state.relations = state.relations.filter(r => !pred(r));
 }
+
+export const settings = {
+  autoContrast: true,
+  backgroundColor: '#ffffff' // グラフ領域の背景色（必要なら変更）
+};
