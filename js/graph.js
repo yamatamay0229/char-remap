@@ -118,7 +118,7 @@ export function deleteSelection(){
 // ---- style functions (data優先の色) ----
 function nodeBgColor(ele){
   const raw = ele.data('nodeColor') || '#f3f4f6';
-  return settings.autoContrast ? adjustContrastNear(raw, settings.backgroundColor, 1.5) : '#FFFFFF';
+  return settings.autoContrast ? adjustContrastNear(raw, settings.backgroundColor, 1.5) : raw;
 }
 function nodeTextColor(ele){
   const raw = ele.data('textColor') || '#111827';
@@ -219,37 +219,32 @@ function adjustContrastNear(hex, bg, min=3){
 
   const hsl = rgbToHsl(origRgb);
 
-  // 明るくする方向： [Lorig, 1] で最小上方解（hi）を探す
+  // 明るくする探索
   const tryBrighten = ()=>{
     let lo = hsl.l, hi = 1;
-    for (let i=0;i<18;i++){
+    for (let i=0; i<18; i++){
       const mid = (lo+hi)/2;
       const test = rgbToHex(hslToRgb({h:hsl.h, s:hsl.s, l:mid}));
       if (contrastRatio(test, bg) >= min) hi = mid; else lo = mid;
     }
-    const out = rgbToHex(hslToRgb({h:hsl.h, s:hsl.s, l:hi}));
-    return { hex: out, delta: Math.abs(hi - hsl.l), ok: contrastRatio(out, bg) >= min };
+    return { hex: rgbToHex(hslToRgb({h:hsl.h, s:hsl.s, l:hi})), delta: Math.abs(hi - hsl.l) };
   };
 
-  // 暗くする方向： [0, Lorig] で最大下方解（hi）を探す
+  // 暗くする探索
   const tryDarken = ()=>{
     let lo = 0, hi = hsl.l;
-    for (let i=0;i<18;i++){
+    for (let i=0; i<18; i++){
       const mid = (lo+hi)/2;
       const test = rgbToHex(hslToRgb({h:hsl.h, s:hsl.s, l:mid}));
-      if (contrastRatio(test, bg) >= min) hi = mid; else lo = mid;
+      if (contrastRatio(test, bg) >= min) lo = mid; else hi = mid;
     }
-    const out = rgbToHex(hslToRgb({h:hsl.h, s:hsl.s, l:hi}));
-    return { hex: out, delta: Math.abs(hi - hsl.l), ok: contrastRatio(out, bg) >= min };
+    // 注意: loが「クリアした最大L」になる
+    return { hex: rgbToHex(hslToRgb({h:hsl.h, s:hsl.s, l:lo})), delta: Math.abs(lo - hsl.l) };
   };
 
   const up = tryBrighten();
   const down = tryDarken();
 
-  if (up.ok && down.ok) return up.delta <= down.delta ? up.hex : down.hex;
-  if (up.ok) return up.hex;
-  if (down.ok) return down.hex;
-
-  // どちらも満たせない場合は「近い方」
+  // どちらが元に近いかで選ぶ
   return up.delta <= down.delta ? up.hex : down.hex;
 }
