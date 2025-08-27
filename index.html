@@ -1,31 +1,327 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>人物相関図（ビューア雛形）</title>
-  <link rel="stylesheet" href="./style.css" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>人物相関図（編集UIつき雛形）</title>
+
+<!-- ====== Minimal CSS（内蔵） ====== -->
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto,
+                 "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+    color: #111827;
+  }
+  header.toolbar {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; padding: 10px 12px; background: #fff; border-bottom: 1px solid #e5e7eb;
+  }
+  .toolbar .left { display: flex; align-items: center; gap: 10px; }
+  .toolbar .right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  button, .btn {
+    padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 8px;
+    background: #f9fafb; cursor: pointer;
+  }
+  button:hover, .btn:hover { background: #f3f4f6; }
+  label.snap { user-select: none; }
+  main { height: calc(100vh - 56px); }
+  #graph { height: 100%; }
+
+  /* ---- Modal ---- */
+  dialog {
+    border: none; border-radius: 12px; padding: 0; width: min(720px, 92vw);
+    box-shadow: 0 10px 40px rgba(0,0,0,.15);
+  }
+  .modal {
+    display: grid; gap: 12px; padding: 16px;
+  }
+  .modal header { font-weight: 700; font-size: 16px; }
+  .modal form { display: grid; gap: 10px; }
+  .row { display: grid; grid-template-columns: 140px 1fr; align-items: center; gap: 10px; }
+  .row > label { color: #374151; }
+  .row input[type="text"], .row input[type="number"], .row select {
+    width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 8px;
+  }
+  .modal .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+  .danger { color: #b91c1c; border-color: #fca5a5; background: #fff1f2; }
+  .muted { color: #6b7280; }
+
+  /* ---- Cytoscape node/edge ---- */
+  .cy-label { font-size: 12px; }
+</style>
 </head>
+
 <body>
-  <header class="toolbar">
-    <div class="left">
-      <strong>人物相関図</strong>
-    </div>
-    <div class="right">
-      <button id="btn-random">ランダム配置</button>
-      <button id="btn-circle">円形配置</button>
-      <button id="btn-center">選択中心配置</button>
-      <label class="snap">
-        <input type="checkbox" id="chk-snap" checked />
-        グリッドスナップ
-      </label>
-    </div>
-  </header>
+<header class="toolbar">
+  <div class="left">
+    <strong>人物相関図</strong>
+  </div>
+  <div class="right">
+    <button id="btn-add-person">人物を追加</button>
+    <button id="btn-add-relation">関係を追加</button>
+    <button id="btn-delete" class="danger">選択を削除</button>
+    <span class="muted">｜</span>
+    <button id="btn-random">ランダム配置</button>
+    <button id="btn-circle">円形配置</button>
+    <button id="btn-center">選択中心配置</button>
+    <label class="snap">
+      <input type="checkbox" id="chk-snap" checked> グリッドスナップ
+    </label>
+  </div>
+</header>
 
-  <main id="graph"></main>
+<main id="graph"></main>
 
-  <!-- Cytoscape.js CDN -->
-  <script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
-  <script src="./main.js"></script>
+<!-- ====== Modals ====== -->
+<dialog id="dlg-person">
+  <div class="modal">
+    <header>人物を追加</header>
+    <form id="form-person" method="dialog">
+      <div class="row">
+        <label for="p-id">ID（英数字）</label>
+        <input id="p-id" name="id" type="text" placeholder="例: altina" required>
+      </div>
+      <div class="row">
+        <label for="p-name">名前</label>
+        <input id="p-name" name="name" type="text" placeholder="例: アルティナ" required>
+      </div>
+      <div class="row">
+        <label for="p-image">画像URL（任意）</label>
+        <input id="p-image" name="image" type="text" placeholder="./images/altina.png">
+      </div>
+      <div class="actions">
+        <button type="button" id="p-cancel" class="btn">キャンセル</button>
+        <button type="submit" class="btn">追加</button>
+      </div>
+    </form>
+  </div>
+</dialog>
+
+<dialog id="dlg-relation">
+  <div class="modal">
+    <header>関係を追加</header>
+    <form id="form-relation" method="dialog">
+      <div class="row">
+        <label for="r-from">From（誰から）</label>
+        <select id="r-from" name="from" required></select>
+      </div>
+      <div class="row">
+        <label for="r-to">To（誰へ）</label>
+        <select id="r-to" name="to" required></select>
+      </div>
+      <div class="row">
+        <label for="r-label">関係名</label>
+        <input id="r-label" name="label" type="text" placeholder="例: 保護 / 信頼" required>
+      </div>
+      <div class="row">
+        <label for="r-strength">強さ（1-5）</label>
+        <input id="r-strength" name="strength" type="number" min="1" max="5" value="3" required>
+      </div>
+      <div class="row">
+        <label for="r-type">種別</label>
+        <input id="r-type" name="type" type="text" placeholder="例: 感情 / 家族 / 敵対">
+      </div>
+      <div class="row">
+        <label for="r-mutual">相互</label>
+        <select id="r-mutual" name="mutual">
+          <option value="false" selected>いいえ</option>
+          <option value="true">はい</option>
+        </select>
+      </div>
+      <div class="actions">
+        <button type="button" id="r-cancel" class="btn">キャンセル</button>
+        <button type="submit" class="btn">追加</button>
+      </div>
+    </form>
+  </div>
+</dialog>
+
+<!-- Cytoscape.js CDN -->
+<script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+
+<!-- ====== App JS（内蔵） ====== -->
+<script>
+  // -------- Config --------
+  const GRID = 50;
+  const COLOR_BY_TYPE = { "感情":"#ef4444","家族":"#3b82f6","敵対":"#111827","組織":"#10b981" };
+
+  // -------- State（メモリ上のデータ。読み込み後ここに保持） --------
+  let state = {
+    characters: [],   // [{id, name, image, x?, y?}]
+    relations: []     // [{from, to, label, strength, mutual, type}]
+  };
+
+  // -------- Load JSON then boot --------
+  (async function init(){
+    const [chars, rels] = await Promise.all([
+      fetch('./data/characters.json').then(r => r.json()).catch(()=>[]),
+      fetch('./data/relations.json').then(r => r.json()).catch(()=>[])
+    ]);
+    state.characters = Array.isArray(chars) ? chars : [];
+    state.relations  = Array.isArray(rels) ? rels : [];
+
+    const nodes = state.characters.map(c => ({
+      data: { id: String(c.id ?? c.name),
+              name: c.name ?? String(c.id ?? ""),
+              image: c.image ?? null },
+      position: (c.x!=null && c.y!=null) ? {x:c.x,y:c.y} : undefined
+    }));
+    const edges = state.relations.map((r,i)=>({
+      data: { id: 'e'+i, source:String(r.from), target:String(r.to),
+              label:r.label??'', strength:Number(r.strength??3),
+              type:r.type??'', mutual:!!r.mutual },
+      classes: r.mutual ? 'mutual' : ''
+    }));
+
+    bootCytoscape(nodes, edges);
+    wireUI();
+  })();
+
+  // -------- Cytoscape --------
+  let cy;
+  function bootCytoscape(nodes, edges){
+    cy = cytoscape({
+      container: document.getElementById('graph'),
+      elements: { nodes, edges },
+      layout: { name: 'random' },
+      wheelSensitivity: .2,
+      style: [
+        { selector: 'node', style: {
+          'shape': 'round-rectangle', 'width': 100, 'height': 120,
+          'background-color': '#f3f4f6', 'background-image': 'data(image)', 'background-fit':'cover',
+          'border-color':'#9ca3af','border-width':2,
+          'label':'data(name)','text-wrap':'wrap','text-valign':'bottom','text-halign':'center',
+          'text-background-opacity': .7, 'text-background-color':'#fff','text-margin-y':8,'font-size':12
+        }},
+        { selector: 'edge', style: {
+          'curve-style':'bezier', 'line-color': edgeColorByType, 'target-arrow-color': edgeColorByType,
+          'width': 'mapData(strength, 1, 5, 2, 8)', 'label':'data(label)','font-size':11,
+          'text-background-opacity': .8, 'text-background-color': '#fff', 'text-background-padding': 2,
+          'target-arrow-shape':'triangle'
+        }},
+        { selector: 'edge.mutual', style: { 'source-arrow-shape':'triangle','source-arrow-color': edgeColorByType }},
+        { selector: 'node:selected', style: { 'border-color': '#2563eb', 'border-width': 3 }},
+        { selector: 'edge:selected', style: { 'line-color':'#2563eb','target-arrow-color':'#2563eb','source-arrow-color':'#2563eb' }}
+      ]
+    });
+
+    // グリッドスナップ：ドラッグ終了時に丸める
+    cy.on('free','node', (evt)=>{
+      if (!document.getElementById('chk-snap').checked) return;
+      const n = evt.target, p = n.position();
+      n.position({ x: Math.round(p.x/GRID)*GRID, y: Math.round(p.y/GRID)*GRID });
+      // 位置を state に反映
+      const id = n.id();
+      const i = state.characters.findIndex(c => String(c.id??c.name) === id);
+      if (i >= 0) { state.characters[i].x = n.position().x; state.characters[i].y = n.position().y; }
+    });
+  }
+  function edgeColorByType(ele){ const t = ele.data('type'); return COLOR_BY_TYPE[t] || '#6b7280'; }
+
+  // -------- UI Wiring --------
+  function wireUI(){
+    // レイアウト
+    document.getElementById('btn-random').onclick = () => cy.layout({name:'random'}).run();
+    document.getElementById('btn-circle').onclick = () => cy.layout({name:'circle', fit:true, padding:40}).run();
+    document.getElementById('btn-center').onclick = () => {
+      const sel = cy.$('node:selected'); if (!sel.length) return;
+      const center = sel[0].position(), neighbors = sel[0].connectedEdges().connectedNodes().difference(sel);
+      const N = neighbors.length, R = 180;
+      neighbors.positions((i)=>({ x:center.x+Math.cos(2*Math.PI*i/Math.max(N,1))*R,
+                                  y:center.y+Math.sin(2*Math.PI*i/Math.max(N,1))*R }));
+      cy.center(sel[0]);
+    };
+
+    // 追加ダイアログ
+    const dlgP = document.getElementById('dlg-person');
+    const formP = document.getElementById('form-person');
+    document.getElementById('btn-add-person').onclick = () => {
+      formP.reset(); dlgP.showModal();
+    };
+    document.getElementById('p-cancel').onclick = () => dlgP.close();
+    formP.onsubmit = (e)=>{
+      e.preventDefault();
+      const id = document.getElementById('p-id').value.trim();
+      const name = document.getElementById('p-name').value.trim();
+      const image = document.getElementById('p-image').value.trim() || null;
+      if (!id || !name) return;
+
+      // 重複チェック
+      if (cy.$id(id).length){ alert('そのIDは既に存在します'); return; }
+
+      // 追加
+      state.characters.push({ id, name, image });
+      cy.add({ group:'nodes', data:{ id, name, image } });
+      dlgP.close();
+    };
+
+    const dlgR = document.getElementById('dlg-relation');
+    const formR = document.getElementById('form-relation');
+    const selFrom = document.getElementById('r-from');
+    const selTo   = document.getElementById('r-to');
+
+    function refreshPersonSelects(){
+      const options = state.characters.map(c => `<option value="${escapeHtml(String(c.id??c.name))}">${escapeHtml(c.name)}</option>`).join('');
+      selFrom.innerHTML = options; selTo.innerHTML = options;
+    }
+    refreshPersonSelects();
+
+    document.getElementById('btn-add-relation').onclick = () => {
+      if (state.characters.length < 2){ alert('人物が2人以上必要です'); return; }
+      refreshPersonSelects();
+      formR.reset();
+      document.getElementById('r-strength').value = 3;
+      document.getElementById('r-mutual').value = "false";
+      dlgR.showModal();
+    };
+    document.getElementById('r-cancel').onclick = () => dlgR.close();
+    formR.onsubmit = (e)=>{
+      e.preventDefault();
+      const from = selFrom.value, to = selTo.value;
+      const label = document.getElementById('r-label').value.trim();
+      const strength = Math.max(1, Math.min(5, Number(document.getElementById('r-strength').value || 3)));
+      const type = document.getElementById('r-type').value.trim();
+      const mutual = document.getElementById('r-mutual').value === "true";
+
+      if (from === to){ alert('同一人物同士は選べません'); return; }
+
+      // 追加
+      state.relations.push({ from, to, label, strength, type, mutual });
+      const id = 'e' + (cy.edges().length + 1);
+      cy.add({ group:'edges', data:{ id, source:from, target:to, label, strength, type, mutual },
+               classes: mutual ? 'mutual' : '' });
+      dlgR.close();
+    };
+
+    // 削除（選択された node/edge を削除）
+    document.getElementById('btn-delete').onclick = () => {
+      const sel = cy.$(':selected'); if (!sel.length) return;
+      const nodes = sel.nodes(); const edges = sel.edges();
+
+      // state からも削除
+      nodes.forEach(n=>{
+        const id = n.id();
+        state.characters = state.characters.filter(c => String(c.id??c.name) !== id);
+        state.relations  = state.relations.filter(r => r.from !== id && r.to !== id);
+      });
+      edges.forEach(e=>{
+        const s = e.data('source'), t = e.data('target'), lbl = e.data('label');
+        state.relations = state.relations.filter(r => !(r.from===s && r.to===t && r.label===lbl));
+      });
+
+      // グラフから削除
+      cy.remove(sel);
+    };
+
+    // 選択でボタン活性/非活性などはお好みで（簡易のため省略）
+  }
+
+  // -------- Helpers --------
+  function escapeHtml(s){ return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+</script>
 </body>
 </html>
