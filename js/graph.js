@@ -251,5 +251,5 @@ function adjustContrastNear(hex, bg, min=3){
   if (down.ok) return down.hex;
 
   // どちらも満たせない場合は「近い方」
-  return hex;//up.delta <= down.delta ? up.hex : down.hex;
+  return up.hex;//up.delta <= down.delta ? up.hex : down.hex;
 }
