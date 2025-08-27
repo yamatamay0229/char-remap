@@ -246,10 +246,12 @@ function adjustContrastNear(hex, bg, min=3){
   const up = tryBrighten();
   const down = tryDarken();
 
+  return up.hex;
+
   if (up.ok && down.ok) return up.delta <= down.delta ? up.hex : down.hex;
   if (up.ok) return up.hex;
   if (down.ok) return down.hex;
 
   // どちらも満たせない場合は「近い方」
-  return up.hex;//up.delta <= down.delta ? up.hex : down.hex;
+  return up.delta <= down.delta ? up.hex : down.hex;
 }
