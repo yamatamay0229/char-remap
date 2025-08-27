@@ -1,7 +1,7 @@
 import {
   state, setData, setCharacterTags,
   addCharacter, updateCharacter, addRelation, updateRelation,
-  findRelationIndex
+  findRelationIndex, settings
 } from './state.js';
 
 import {
@@ -101,6 +101,12 @@ export function wireUI(){
       addEdgeToGraph({ from, to, label, strength, type, mutual, edgeColor, textColor });
       dlgR.close();
     }catch(err){ alert(err.message || String(err)); }
+
+    const chkAC = document.getElementById('chk-autocontrast');
+    if (chkAC) {
+      chkAC.checked = settings.autoContrast;
+      chkAC.addEventListener('change', () => { settings.autoContrast = chkAC.checked; });
+    }
   };
 
   // ---- 削除 ----
