@@ -12,12 +12,15 @@
     <div class="right">
       <button id="btn-add-person">人物を追加</button>
       <button id="btn-add-relation">関係を追加</button>
+      <button id="btn-edit" class="">選択を編集</button>
       <button id="btn-delete" class="danger">選択を削除</button>
       <span class="muted">｜</span>
       <button id="btn-random">ランダム配置</button>
       <button id="btn-circle">円形配置</button>
       <button id="btn-center">選択中心配置</button>
       <label class="snap"><input type="checkbox" id="chk-snap" checked> グリッドスナップ</label>
+      <span class="muted">｜</span>
+      <button id="btn-attr-tags">属性タグを編集</button>
       <button id="btn-import-json">読み込み(JSON)</button>
       <button id="btn-export-json">保存(JSON)</button>
       <input type="file" id="file-import-json" accept="application/json" hidden>
@@ -31,18 +34,15 @@
     <div class="modal">
       <header>人物を追加</header>
       <form id="form-person" method="dialog">
-        <div class="row">
-          <label for="p-id">ID（英数字）</label>
-          <input id="p-id" name="id" type="text" placeholder="altina" required>
-        </div>
-        <div class="row">
-          <label for="p-name">名前</label>
-          <input id="p-name" name="name" type="text" placeholder="アルティナ" required>
-        </div>
-        <div class="row">
-          <label for="p-image">画像URL（任意）</label>
-          <input id="p-image" name="image" type="text" placeholder="./images/altina.png">
-        </div>
+        <div class="row"><label for="p-id">ID（英数字）</label><input id="p-id" name="id" type="text" required></div>
+        <div class="row"><label for="p-name">名前</label><input id="p-name" name="name" type="text" required></div>
+        <div class="row"><label for="p-image">画像URL（任意）</label><input id="p-image" name="image" type="text" placeholder="./images/sample.png"></div>
+        <div class="row"><label for="p-bg">背景色（任意）</label><input id="p-bg" name="bg" type="color" value="#f3f4f6"></div>
+        <div class="row"><label for="p-fg">文字色（任意）</label><input id="p-fg" name="fg" type="color" value="#111827"></div>
+        <fieldset id="p-attrs" class="modal">
+          <legend class="muted">属性（共通タグ）</legend>
+          <!-- ここに動的にタグ入力を生成 -->
+        </fieldset>
         <div class="actions">
           <button type="button" id="p-cancel" class="btn">キャンセル</button>
           <button type="submit" class="btn">追加</button>
@@ -56,33 +56,16 @@
     <div class="modal">
       <header>関係を追加</header>
       <form id="form-relation" method="dialog">
-        <div class="row">
-          <label for="r-from">From（誰から）</label>
-          <select id="r-from" name="from" required></select>
+        <div class="row"><label for="r-from">From</label><select id="r-from" name="from" required></select></div>
+        <div class="row"><label for="r-to">To</label><select id="r-to" name="to" required></select></div>
+        <div class="row"><label for="r-label">関係名</label><input id="r-label" name="label" type="text" required></div>
+        <div class="row"><label for="r-strength">強さ（1-5）</label><input id="r-strength" name="strength" type="number" min="1" max="5" value="3" required></div>
+        <div class="row"><label for="r-type">種別</label><input id="r-type" name="type" type="text" placeholder="感情 / 家族 / 敵対"></div>
+        <div class="row"><label for="r-mutual">相互</label>
+          <select id="r-mutual" name="mutual"><option value="false" selected>いいえ</option><option value="true">はい</option></select>
         </div>
-        <div class="row">
-          <label for="r-to">To（誰へ）</label>
-          <select id="r-to" name="to" required></select>
-        </div>
-        <div class="row">
-          <label for="r-label">関係名</label>
-          <input id="r-label" name="label" type="text" placeholder="保護 / 信頼" required>
-        </div>
-        <div class="row">
-          <label for="r-strength">強さ（1-5）</label>
-          <input id="r-strength" name="strength" type="number" min="1" max="5" value="3" required>
-        </div>
-        <div class="row">
-          <label for="r-type">種別</label>
-          <input id="r-type" name="type" type="text" placeholder="感情 / 家族 / 敵対">
-        </div>
-        <div class="row">
-          <label for="r-mutual">相互</label>
-          <select id="r-mutual" name="mutual">
-            <option value="false" selected>いいえ</option>
-            <option value="true">はい</option>
-          </select>
-        </div>
+        <div class="row"><label for="r-line">線色（任意）</label><input id="r-line" name="line" type="color" value="#6b7280"></div>
+        <div class="row"><label for="r-text">文字色（任意）</label><input id="r-text" name="text" type="color" value="#111827"></div>
         <div class="actions">
           <button type="button" id="r-cancel" class="btn">キャンセル</button>
           <button type="submit" class="btn">追加</button>
@@ -91,9 +74,22 @@
     </div>
   </dialog>
 
+  <!-- 選択編集（人物または関係） -->
+  <dialog id="dlg-edit">
+    <div class="modal">
+      <header id="edit-title">編集</header>
+      <form id="form-edit" method="dialog">
+        <div id="edit-fields"><!-- 動的に差し込む --></div>
+        <div class="actions">
+          <button type="button" id="e-cancel" class="btn">キャンセル</button>
+          <button type="submit" class="btn">保存</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
   <!-- Cytoscape -->
   <script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
-  <!-- アプリ本体 -->
   <script type="module" src="./js/main.js"></script>
 </body>
 </html>
