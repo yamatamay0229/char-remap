@@ -212,6 +212,7 @@ function contrastRatio(hex1, hex2){
  * @returns 調整後のhex
  */
 function adjustContrastNear(hex, bg, min=3){
+  console.log('adjustContrastNear hit', hex, bg, min);
   if (!hex) return null;
   const origRgb = hexToRgb(hex), bgRgb = hexToRgb(bg);
   if (!origRgb || !bgRgb) return hex;
