@@ -246,7 +246,7 @@ function adjustContrastNear(hex, bg, min=3){
   const up = tryBrighten();
   const down = tryDarken();
 
-  return up.hex;
+  return down.hex;
 
   if (up.ok && down.ok) return up.delta <= down.delta ? up.hex : down.hex;
   if (up.ok) return up.hex;
