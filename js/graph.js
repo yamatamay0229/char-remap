@@ -2,7 +2,7 @@ import { GRID, COLOR_BY_TYPE, state, removeCharacterById, removeRelationPredicat
 
 let cy;
 
-export function bootCytoscape(){
+function elementsFromState(state){
   const nodes = state.characters.map(c => ({
     data: { id: String(c.id ?? c.name), name: c.name ?? String(c.id ?? ""), image: c.image ?? null },
     position: (c.x!=null && c.y!=null) ? {x:c.x, y:c.y} : undefined
@@ -12,7 +12,12 @@ export function bootCytoscape(){
             label:r.label??'', strength:Number(r.strength??3), type:r.type??'', mutual:!!r.mutual },
     classes: r.mutual ? 'mutual' : ''
   }));
+  return {nodes, edges};
+}
 
+export function bootCytoscape(){
+  const {nodes, edges} = elementsFromState(state);
+  
   cy = cytoscape({
     container: document.getElementById('graph'),
     elements: { nodes, edges },
@@ -50,6 +55,14 @@ export function bootCytoscape(){
   });
 
   return cy;
+}
+
+export function reloadGraphFromState(){
+  const {nodes, edges} = elementsFromState(state);
+  cy.elements().remove();
+  cy.add(nodes);
+  cy.add(edges);
+  cy.layout({ name: 'random' }).run();
 }
 
 export function layoutRandom(){ cy.layout({name:'random'}).run(); }
