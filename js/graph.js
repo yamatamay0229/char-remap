@@ -215,37 +215,36 @@ function adjustContrastNear(hex, bg, min=3){
   if (!hex) return null;
   const origRgb = hexToRgb(hex), bgRgb = hexToRgb(bg);
   if (!origRgb || !bgRgb) return hex;
+  // 既に満たしていればそのまま
   if (contrastRatio(hex, bg) >= min) return hex;
 
   const hsl = rgbToHsl(origRgb);
-
-  // 明るくする探索
-  const tryBrighten = ()=>{
-    let lo = hsl.l, hi = 1;
-    for (let i=0; i<18; i++){
+  const tryDir = (dir)=>{ // dir: +1 (明るく) / -1 (暗く)
+    let lo = hsl.l, hi = dir>0 ? 1 : 0;
+    // 二分探索で最小移動点を探す
+    for (let i=0;i<18;i++){
       const mid = (lo+hi)/2;
-      const test = rgbToHex(hslToRgb({h:hsl.h, s:hsl.s, l:mid}));
-      if (contrastRatio(test, bg) >= min) hi = mid; else lo = mid;
+      const testHex = rgbToHex(hslToRgb({h:hsl.h, s:hsl.s, l:mid}));
+      const ok = contrastRatio(testHex, bg) >= min;
+      if (dir>0){ // 明るく
+        if (ok) hi = mid; else lo = mid;
+      } else {   // 暗く
+        if (ok) lo = mid; else hi = mid;
+      }
     }
-    return { hex: rgbToHex(hslToRgb({h:hsl.h, s:hsl.s, l:hi})), delta: Math.abs(hi - hsl.l) };
+    const lNew = dir>0 ? hi : lo;
+    const outHex = rgbToHex(hslToRgb({h:hsl.h, s:hsl.s, l:lNew}));
+    return { hex: outHex, delta: Math.abs(lNew - hsl.l), ok: contrastRatio(outHex, bg) >= min, l:lNew };
   };
 
-  // 暗くする探索
-  const tryDarken = ()=>{
-    let lo = 0, hi = hsl.l;
-    for (let i=0; i<18; i++){
-      const mid = (lo+hi)/2;
-      const test = rgbToHex(hslToRgb({h:hsl.h, s:hsl.s, l:mid}));
-      if (contrastRatio(test, bg) >= min) lo = mid; else hi = mid;
-    }
-    // 注意: loが「クリアした最大L」になる
-    return { hex: rgbToHex(hslToRgb({h:hsl.h, s:hsl.s, l:lo})), delta: Math.abs(lo - hsl.l) };
-  };
+  const up   = tryDir(+1);
+  const down = tryDir(-1);
 
-  const up = tryBrighten();
-  const down = tryDarken();
+  // どちらも満たせる→移動量が小さい方。片方だけ満たせる→そちら。
+  if (up.ok && down.ok) return up.delta <= down.delta ? up.hex : down.hex;
+  if (up.ok) return up.hex;
+  if (down.ok) return down.hex;
 
-  // どちらが元に近いかで選ぶ
-  console.log('adjustContrastNear hit', hex, bg, min, up, down);
+  // どちらも満たせない（極端な背景と極端な色）→ “より近い方” を返す
   return up.delta <= down.delta ? up.hex : down.hex;
 }
