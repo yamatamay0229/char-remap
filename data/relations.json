@@ -1,1 +1,4 @@
-[]
+[
+  { "from": "altina", "to": "uruu", "label": "保護", "strength": 5, "mutual": true,  "type": "感情" },
+  { "from": "uruu",   "to": "altina","label": "信頼","strength": 4, "mutual": false, "type": "感情" }
+]
