@@ -253,15 +253,3 @@ function adjustContrastNear(hex, bg, min=3){
   // どちらも満たせない場合は「近い方」
   return up.delta <= down.delta ? up.hex : down.hex;
 }
-
-  const up   = tryDir(+1);
-  const down = tryDir(-1);
-
-  // どちらも満たせる→移動量が小さい方。片方だけ満たせる→そちら。
-  if (up.ok && down.ok) return up.delta <= down.delta ? up.hex : down.hex;
-  if (up.ok) return up.hex;
-  if (down.ok) return down.hex;
-
-  // どちらも満たせない（極端な背景と極端な色）→ “より近い方” を返す
-  return up.delta <= down.delta ? up.hex : down.hex;
-}
