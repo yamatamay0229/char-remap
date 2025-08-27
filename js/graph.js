@@ -118,22 +118,21 @@ export function deleteSelection(){
 // ---- style functions (data優先の色) ----
 function nodeBgColor(ele){
   const raw = ele.data('nodeColor') || '#f3f4f6';
-  return settings.autoContrast ? ensureContrast(raw, settings.backgroundColor, 1.5) : raw;
+  return settings.autoContrast ? adjustContrastNear(raw, settings.backgroundColor, 1.5) : raw;
 }
 function nodeTextColor(ele){
   const raw = ele.data('textColor') || '#111827';
-  // ノード文字はノード背景とコントラストを見る
-  const bg = nodeBgColor(ele);
-  return settings.autoContrast ? ensureContrast(raw, bg, 3) : raw;
+  const bg  = nodeBgColor(ele); // ノード文字はノード背景と比較
+  return settings.autoContrast ? adjustContrastNear(raw, bg, 3) : raw;
 }
 function edgeLineColor(ele){
   const raw = ele.data('edgeColor') || (COLOR_BY_TYPE[ele.data('type')] || '#6b7280');
-  return settings.autoContrast ? ensureContrast(raw, settings.backgroundColor, 3) : raw;
+  return settings.autoContrast ? adjustContrastNear(raw, settings.backgroundColor, 3) : raw;
 }
 function edgeTextColor(ele){
   const raw = ele.data('textColor') || '#111827';
-  // エッジラベルは白背景（styleで#fff）上に乗るので、それに対するコントラストを見る
-  return settings.autoContrast ? ensureContrast(raw, '#ffffff', 3) : raw;
+  // ラベルは白地（text-background-color:#fff）上に描かれる想定
+  return settings.autoContrast ? adjustContrastNear(raw, '#ffffff', 3) : raw;
 }
 
 // 編集適用用：選択中ノード/エッジの data を差し替える
