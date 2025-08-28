@@ -125,6 +125,10 @@ document.addEventListener('app:command', (e) => {
       applyTheme(); // grid は app:themechanged で再描画
       break;
 
+    case 'toggleSidebar':
+      document.body.classList.toggle('sidebar-collapsed');
+      break;
+
     // ── 既存の更新/削除 ─────────────────────────
     case 'updateCharacter':
       updateCharacter(id, patch);
