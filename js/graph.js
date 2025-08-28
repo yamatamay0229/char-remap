@@ -2,6 +2,8 @@ import { GRID, COLOR_BY_TYPE, state, removeCharacterById, removeRelationPredicat
 import { settings } from './settings.js';
 import * as grid from './grid.js';
 
+let cy;
+
 function elementsFromState(){
   const nodes = state.characters.map(c => ({
     data: {
@@ -39,7 +41,7 @@ function getColorsFromCssVars(){
 
 export function bootCytoscape(){
   const { nodes, edges } = elementsFromState();
-  const cy = cytoscape({
+  cy = cytoscape({
     container: document.getElementById('graph'),
     elements: { nodes, edges },
     layout: { name: 'random' },
