@@ -131,7 +131,7 @@ export function bootCytoscape(){
     canvas.style.height = rect.height + 'px';
     canvas.width  = Math.round(rect.width  * dpr);
     canvas.height = Math.round(rect.height * dpr);
-    ctx.setTransform(dpr,0,0,dpr,0,0); // 以降はCSSピクセル基準で描く
+    //ctx.setTransform(dpr,0,0,dpr,0,0); // 以降はCSSピクセル基準で描く
   };
 
   // 背景に応じた線色（明/暗）
@@ -151,59 +151,59 @@ export function bootCytoscape(){
   const drawGrid = () => {
     const rect = canvas.getBoundingClientRect();
     const w = rect.width, h = rect.height;
+    const dpr = window.devicePixelRatio || 1;
+
+    // クリア（前回の変換に依存しない）
+    ctx.setTransform(1,0,0,1,0,0);
     ctx.clearRect(0,0,w,h);
 
     const z   = cy.zoom();
     const pan = cy.pan();   // 描画座標系でのパン（px）
 
-    // レンダリング座標での間隔
-    const s1 = spacingBase * z;    // 細グリッド
-    const s5 = s1 * 5;             // 主グリッド
+    // Cytoscape と同じ変換（拡縮の“軸”を完全一致させる）
+    ctx.setTransform(dpr*z, 0, 0, dpr*z, dpr*pan.x, dpr*pan.y);
 
-    // Cytoscapeのpanは「コンテンツのシフト量」なので、背景原点は -pan で合わせる
-    const mod = (v, s) => ((v % s) + s) % s;
-    const off1x = mod(-pan.x, s1), off1y = mod(-pan.y, s1);
-    const off5x = mod(-pan.x, s5), off5y = mod(-pan.y, s5);
-
-    const { minor, major } = getColors();
-
-    // 1pxライントリック：0.5pxにスナップ
-    const line = (x1,y1,x2,y2,color,width=1) => {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = width;
-      ctx.beginPath();
-      // 垂直線ならxを、水平線ならyを0.5にスナップ
-      if (x1 === x2) { x1 = Math.round(x1) + 0.5; x2 = x1; }
-      if (y1 === y2) { y1 = Math.round(y1) + 0.5; y2 = y1; }
-      ctx.moveTo(x1,y1);
-      ctx.lineTo(x2,y2);
-      ctx.stroke();
-    };
+    // Cytoscape と同じ変換（拡縮の“軸”を完全一致させる）
+  ctx.setTransform(dpr*z, 0, 0, dpr*z, dpr*pan.x, dpr*pan.y);
 
     // 細グリッド
-    for (let x = off1x; x <= w; x += s1) line(x, 0, x, h, minor, 1);
-    for (let y = off1y; y <= h; y += s1) line(0, y, w, y, minor, 1);
+  ctx.strokeStyle = minor;
+  ctx.beginPath();
+  for (let x = startX; x <= endX; x += spacingBase) {
+    ctx.moveTo(x, top);
+    ctx.lineTo(x, bottom);
+  }
+  for (let y = startY; y <= endY; y += spacingBase) {
+    ctx.moveTo(left, y);
+    ctx.lineTo(right, y);
+  }
+  ctx.stroke();
 
-    // 主グリッド（5マスごと）
-    for (let x = off5x; x <= w; x += s5) line(x, 0, x, h, major, 1.5);
-    for (let y = off5y; y <= h; y += s5) line(0, y, w, y, major, 1.5);
-  };
+  // 主グリッド（5マスごと）
+  ctx.strokeStyle = major;
+  ctx.beginPath();
+  const step5 = spacingBase * 5;
+  const startX5 = Math.floor(startX / step5) * step5;
+  const startY5 = Math.floor(startY / step5) * step5;
+  for (let x = startX5; x <= endX; x += step5) {
+    ctx.moveTo(x, top);
+    ctx.lineTo(x, bottom);
+  }
+  for (let y = startY5; y <= endY; y += step5) {
+    ctx.moveTo(left, y);
+    ctx.lineTo(right, y);
+  }
+  ctx.stroke();
+};
 
-  // 初期化：サイズ合わせ＆初回描画
-  const ro = new ResizeObserver(() => { resizeCanvas(); drawGrid(); });
-  ro.observe(canvas.parentElement);
-  resizeCanvas();
-  drawGrid();
+// 初期化と同期（既存と同じ）
+const ro = new ResizeObserver(() => { resizeCanvas(); drawGrid(); });
+ro.observe(canvas.parentElement);
+resizeCanvas();
+drawGrid();
 
-  // ズーム/パンのたびに再描画（rAFで間引き）
-  const schedule = (() => {
-    let req = null;
-    return () => {
-      if (req) return;
-      req = requestAnimationFrame(() => { req = null; drawGrid(); });
-    };
-  })();
-  cy.on('viewport', schedule);
+const schedule = (() => { let req=null; return ()=>{ if(req) return; req=requestAnimationFrame(()=>{req=null; drawGrid();}); }; })();
+cy.on('viewport', schedule);
 
   return cy;
 }
