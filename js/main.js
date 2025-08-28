@@ -1,33 +1,16 @@
-import { setData, setCharacterTags } from './state.js';
-import { applyTheme } from './settings.js';
-import * as grid from './grid.js';
-import { bootCytoscape } from './graph.js';
-import { wireUI } from './ui.js';
+// main.js — 起動の順序だけを管理（他は書かない）
+import { applyTheme } from './settings.js';          // テーマ適用（CSS変数反映）
+import * as grid from './grid.js';                   // グリッドCanvasの管理
+import { bootCytoscape } from './graph.js';          // グラフ本体の起動
+import { wireUI } from './ui.js';                    // UIと機能の配線
 
-async function tryFetchJson(url){
-  try { const r = await fetch(url); if(!r.ok) throw 0; return await r.json(); } catch { return null; }
-}
+applyTheme();                                        // 初期テーマ反映
 
-(async function start(){
-  const combined = await tryFetchJson('./data/graph.json');
-  if (combined && Array.isArray(combined.characters) && Array.isArray(combined.relations)) {
-    if (Array.isArray(combined.characterTags)) setCharacterTags(combined.characterTags);
-    setData(combined.characters, combined.relations);
-  } else {
-    const [chars, rels] = await Promise.all([
-      tryFetchJson('./data/characters.json') || [], tryFetchJson('./data/relations.json') || []
-    ]);
-    setData(chars, rels);
-  }
+const container = document.getElementById('graph');  // Cytoscapeのコンテナ
+let cy = null;
 
-  // グリッド：container (#graph) を渡す。cy取得関数は後から注入
-  const container = document.getElementById('graph');
-	let cy = null;
-	grid.init(container, { getCy: () => cy }); // ← cy 参照は関数で遅延解決
+// grid.init: グリッドの初期化。cyインスタンスは後から入るので getter で遅延参照
+grid.init(container, { getCy: () => cy });           // [API] グリッドを使える状態にする
 
-	// Cytoscapeを起動
-	cy = bootCytoscape();
-
-	// UI配線（必要なら cy を渡す）
-	wireUI(cy);
-})();
+cy = bootCytoscape();                                 // [HOOK] グラフ本体を起動
+wireUI(cy);                                           // [API] UIイベントをまとめて配線
