@@ -1,3 +1,55 @@
+:root{
+  /* ベース */
+  --bg:#ffffff;
+  --fg:#111827;
+  --panel:#f9fafb;
+  --border:#e5e7eb;
+
+  /* ボタン */
+  --btn-bg:#f9fafb;
+  --btn-bg-hover:#f3f4f6;
+  --btn-border:#d1d5db;
+  --btn-danger-fg:#b91c1c;
+  --btn-danger-bg:#fff1f2;
+  --btn-danger-border:#fca5a5;
+
+  /* グリッド（Canvas用） */
+  --grid-minor: rgba(0,0,0,.10);
+  --grid-major: rgba(0,0,0,.25);
+
+  /* ノード/エッジのデフォルト（ユーザー色が無い時） */
+  --node-bg:#f3f4f6;
+  --node-fg:#111827;
+  --edge-fg:#111827;
+}
+:root[data-theme="dark"]{
+  --bg:#0b0b0f;
+  --fg:#e5e7eb;
+  --panel:#111318;
+  --border:#1f2430;
+
+  --btn-bg:#171a21;
+  --btn-bg-hover:#1c2028;
+  --btn-border:#2a3242;
+  --btn-danger-fg:#fecaca;
+  --btn-danger-bg:#2a0f12;
+  --btn-danger-border:#fecaca;
+
+  --grid-minor: rgba(255,255,255,.12);
+  --grid-major: rgba(255,255,255,.28);
+
+  --node-bg:#1a1d24;
+  --node-fg:#e5e7eb;
+  --edge-fg:#e5e7eb;
+}
+
+/* 既存パーツを少しだけ変数に寄せる（徐々に置換でOK） */
+body{ background:var(--bg); color:var(--fg); }
+.toolbar{ background:var(--panel); border-bottom:1px solid var(--border); }
+button,.btn{ background:var(--btn-bg); border:1px solid var(--btn-border); }
+button:hover,.btn:hover{ background:var(--btn-bg-hover); }
+.danger{ color:var(--btn-danger-fg); border-color:var(--btn-danger-border); background:var(--btn-danger-bg); }
+#graph{ position:relative; }
 *{box-sizing:border-box}
 html,body{height:100%}
 body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;color:#111827}
