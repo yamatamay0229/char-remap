@@ -10,18 +10,61 @@ import {
   reloadGraphFromState, patchSelectedNodeData, patchSelectedEdgeData,
   setGridVisible, syncGridNow
 } from './graph.js';
-
+import * as grid from './grid.js';
 import { settings, setSetting, onSettingsChange, applyTheme } from './settings.js';
 
-export function wireUI(){
+export function wireUI(cy){
   // レイアウト
   document.getElementById('btn-random').onclick = layoutRandom;
   document.getElementById('btn-circle').onclick = layoutCircle;
   document.getElementById('btn-center').onclick = layoutCenterOnSelection;
-  document.getElementById('btn-theme').onclick = () => {
-  setSetting('theme', settings.theme === 'dark' ? 'light' : 'dark');
-  applyTheme(); // ← ここがイベント発火の入口
-};
+  
+  const chkAC = document.getElementById('chk-autocontrast');
+	if (chkAC) {
+  	chkAC.checked = settings.autoContrast;
+  	chkAC.addEventListener('change', () => { settings.autoContrast = chkAC.checked; });
+	}
+
+  // ===== グリッド線オーバーレイ初期化 =====
+	const gridEl = document.getElementById('grid-canvas');
+	//initGridOverlay(gridEl);
+
+	// 既存の「グリッドスナップ」チェックに連動して、グリッド線の表示も切り替え
+	const snapChk = document.getElementById('chk-snap');
+	snapChk.checked = !!settings.snap;
+	/*const applyGridSnap = () => {
+  	// 表示状態の切り替えを graph 側APIで
+  	setGridVisible(snapChk.checked);
+  	// スナップ自体の論理フラグは settings へ
+  	setSetting('snap', snapChk.checked);
+	};*/
+	snapChk.addEventListener('change', () => {
+    setSetting('snap', snapChk.checked);   // 設定保存
+    grid.setVisible(snapChk.checked);      // 可視切替（ONで必ず再描画）
+  });
+
+	// 不透明度コントロール（スライダー ⇄ 数値）双方向同期
+	const opSlider = document.getElementById('grid-opacity');
+	const opNumber = document.getElementById('grid-opacity-num');
+	const setGridOpacity = (v) => {
+  	const val = Math.min(1, Math.max(0, Number(v) || 0));
+  	gridEl.style.opacity = String(val);
+  	opSlider.value = String(val);
+  	opNumber.value = String(val);
+	};
+	opSlider.addEventListener('input', (e)=> setGridOpacity(e.target.value));
+	opNumber.addEventListener('input', (e)=> setGridOpacity(e.target.value));
+
+  // 初期反映
+  /*setGridOpacity(opSlider.value);
+  snapChk.checked = !!settings.snap;
+  applyGridSnap();*/
+
+  // ========== テーマ切替 ==========
+  document.getElementById('btn-theme').onclick = ()=>{
+    setSetting('theme', settings.theme === 'dark' ? 'light' : 'dark');
+    applyTheme();		// CSS変数切替 → app:themechanged → grid.redraw()
+  };
 
   // ---- 人物追加ダイアログ ----
   const dlgP = document.getElementById('dlg-person');
@@ -110,49 +153,8 @@ export function wireUI(){
     }catch(err){ alert(err.message || String(err)); }
   };
 
-const chkAC = document.getElementById('chk-autocontrast');
-if (chkAC) {
-  chkAC.checked = settings.autoContrast;
-  chkAC.addEventListener('change', () => { settings.autoContrast = chkAC.checked; });
-}
-
-  // ===== グリッド線オーバーレイ初期化 =====
-const gridEl = document.getElementById('grid-canvas');
-//initGridOverlay(gridEl);
-
-// 既存の「グリッドスナップ」チェックに連動して、グリッド線の表示も切り替え
-const snapChk = document.getElementById('chk-snap');
-/*const applyGridVisibility = () => {
-  gridEl.style.display = snapChk.checked ? 'block' : 'none';
-};
-applyGridVisibility();*/
-const applyGridSnap = () => {
-  // 表示状態の切り替えを graph 側APIで
-  setGridVisible(snapChk.checked);
-  // スナップ自体の論理フラグは settings へ
-  setSetting('snap', snapChk.checked);
-};
-snapChk.addEventListener('change', applyGridSnap);
-
-// 不透明度コントロール（スライダー ⇄ 数値）双方向同期
-const opSlider = document.getElementById('grid-opacity');
-const opNumber = document.getElementById('grid-opacity-num');
-const setGridOpacity = (v) => {
-  const val = Math.min(1, Math.max(0, Number(v) || 0));
-  gridEl.style.opacity = String(val);
-  opSlider.value = String(val);
-  opNumber.value = String(val);
-};
-opSlider.addEventListener('input', (e)=> setGridOpacity(e.target.value));
-opNumber.addEventListener('input', (e)=> setGridOpacity(e.target.value));
-
-// 初期反映
-setGridOpacity(opSlider.value);
-  snapChk.checked = !!settings.snap;
-applyGridSnap();
-
 // ===== ヘルパ：グリッドの見た目を初期化 =====
-function initGridOverlay(el){
+/*function initGridOverlay(el){
   // 背景が明るい/暗いで線色を切替（お好みで固定でもOK）
   const bg = (settings?.backgroundColor ?? '#ffffff').toLowerCase();
   const isLightBg = (() => {
@@ -176,13 +178,7 @@ function initGridOverlay(el){
   //el.style.backgroundSize = `${GRID}px ${GRID}px, ${GRID}px ${GRID}px, ${GRID*5}px ${GRID*5}px, ${GRID*5}px ${GRID*5}px`;
   // サイズと位置は graph.js の syncGrid() が都度上書きします
   el.style.backgroundRepeat = 'repeat';
-}
-
-// ========== テーマ切替 ==========
-document.getElementById('btn-theme').onclick = ()=>{
-  setSetting('theme', settings.theme === 'dark' ? 'light' : 'dark');
-  applyTheme();
-};
+}*/
 
 // ========== 設定ダイアログ ==========
 const dlgSet = document.getElementById('dlg-settings');
