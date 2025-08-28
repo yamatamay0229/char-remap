@@ -17,6 +17,7 @@ export function renderMenubar(container, initial = {}) {
       <button class="menu-btn" data-cmd="loadJson">読み込み</button>
     </div>
     <div class="menu-group" style="margin-left:auto">
+      <button class="menu-btn" data-cmd="toggleSidebar" title="サイドバーの表示/非表示">サイドバー</button>
       <label class="menu-toggle" title="グリッド表示">
         <input id="toggle-grid" type="checkbox" ${initial.gridVisible ? 'checked' : ''}>
         グリッド
