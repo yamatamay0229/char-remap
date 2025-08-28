@@ -123,7 +123,7 @@ function nodeBgColor(ele){
 function nodeTextColor(ele){
   const raw = ele.data('textColor') || '#111827';
   const bg  = nodeBgColor(ele); // ノード文字はノード背景と比較
-  return settings.autoContrast ? adjustContrastNear(raw, bg, 1.1) : raw;
+  return settings.autoContrast ? adjustContrastNear(raw, bg, 1.3) : raw;
 }
 function edgeLineColor(ele){
   const raw = ele.data('edgeColor') || (COLOR_BY_TYPE[ele.data('type')] || '#6b7280');
@@ -132,7 +132,7 @@ function edgeLineColor(ele){
 function edgeTextColor(ele){
   const raw = ele.data('textColor') || '#111827';
   // ラベルは白地（text-background-color:#fff）上に描かれる想定
-  return settings.autoContrast ? adjustContrastNear(raw, '#ffffff', 1.4) : raw;
+  return settings.autoContrast ? adjustContrastNear(raw, '#ffffff', 1.3) : raw;
 }
 
 // 編集適用用：選択中ノード/エッジの data を差し替える
