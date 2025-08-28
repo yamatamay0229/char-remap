@@ -125,7 +125,7 @@ export function bootCytoscape(){
     // Cytoscape と同じ変換（拡縮の“軸”を完全一致させる）
     ctx.setTransform(dpr*z, 0, 0, dpr*z, dpr*pan.x, dpr*pan.y);
 
-    const { minor, major } = getColors();
+    const { minor, major } = getColorsFromCssVars();
 
   // 画面内に見えるワールド範囲を算出
   const left   = -pan.x / z;
