@@ -8,7 +8,17 @@ button:hover,.btn:hover{background:#f3f4f6}
 .snap{user-select:none}
 .muted{color:#6b7280}
 .danger{color:#b91c1c;border-color:#fca5a5;background:#fff1f2}
-#graph{height:calc(100vh - 56px)}
+#graph{height:calc(100vh - 56px); position: relative;}
+/* グリッド線オーバーレイ */
+#grid-overlay{
+  position: absolute;
+  inset: 0;              /* top:0; right:0; bottom:0; left:0; の省略 */
+  pointer-events: none;  /* 操作の邪魔をしない */
+  opacity: 0.25;         /* 初期不透明度（UIで変更） */
+  background-position: 0 0;
+  background-repeat: repeat;
+  /* background-image と background-size は JS で GRID に合わせて設定 */
+}
 
 /* dialog */
 dialog{border:none;border-radius:12px;padding:0;width:min(720px,92vw);box-shadow:0 10px 40px rgba(0,0,0,.15)}
