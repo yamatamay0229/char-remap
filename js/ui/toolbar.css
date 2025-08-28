@@ -1,8 +1,9 @@
 /* 上部メニューバー */
 #menubar{
   display:flex; align-items:center; gap:.5rem;
-  padding:.5rem .75rem; background:var(--panel); border-bottom:1px solid var(--border);
-  position:sticky; top:0; z-index:10;
+  height:48px;
+  padding:0 .75rem; background:var(--panel); border-bottom:1px solid var(--border);
+  position:sticky; top:0; z-index:10; /* 画面上部固定 */
 }
 .menu-group{display:flex; gap:.25rem; align-items:center}
 .menu-sep{width:1px; height:26px; background:var(--border); margin:0 .5rem}
@@ -10,12 +11,40 @@
 .menu-btn:hover{background:var(--btn-bg-hover)}
 .menu-toggle{display:flex; align-items:center; gap:.35rem}
 
-/* ステージ（キャンバス＋サイドバー） */
-.stage{display:grid; grid-template-columns: 1fr 300px; height:calc(100vh - 48px)}
-#sidebar{
-  border-left:1px solid var(--border); background:var(--panel);
-  overflow:auto; padding:.75rem;
+/* キャンバス＋サイドバー（横並び） */
+:root{ --sidebar-w: 320px; }
+.stage{
+  display:flex;
+  height:calc(100vh - 48px); /* menubarの分を引く */
+  min-height:320px;
 }
+
+/* キャンバス側 */
+#graph{
+  position:relative;
+  flex:1 1 auto;
+  min-width:0;
+  overflow:hidden;
+}
+
+/* サイドバー（右） */
+#sidebar{
+  flex:0 0 var(--sidebar-w);
+  width:var(--sidebar-w);
+  border-left:1px solid var(--border);
+  background:var(--panel);
+  overflow:auto; padding:.75rem;
+  transition: width .18s ease, flex-basis .18s ease, padding .18s ease, border-color .18s ease;
+}
+
+/* 折り畳み時（bodyにクラスを付与） */
+body.sidebar-collapsed #sidebar{
+  width:0; flex-basis:0;
+  padding:0;
+  border-left-color: transparent;
+}
+
+/* サイドバー内UI */
 .sidebar-section{margin-bottom:1rem}
 .sidebar-title{font-weight:600; font-size:14px; margin-bottom:.5rem; opacity:.9}
 .sidebar-empty{opacity:.6; font-size:13px}
