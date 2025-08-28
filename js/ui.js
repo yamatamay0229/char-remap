@@ -161,12 +161,12 @@ function initGridOverlay(el){
   el.style.backgroundSize = `${GRID}px ${GRID}px`;
 
   // 5マスごとに少し濃い「主グリッド」を重ねたい場合は、以下を追加で重ねてもOK
-  // el.style.backgroundImage =
-  //   `linear-gradient(to right, ${minor} 1px, transparent 1px),
-  //    linear-gradient(to bottom, ${minor} 1px, transparent 1px),
-  //    linear-gradient(to right, ${major} 1px, transparent 1px),
-  //    linear-gradient(to bottom, ${major} 1px, transparent 1px)`;
-  // el.style.backgroundSize = `${GRID}px ${GRID}px, ${GRID}px ${GRID}px, ${GRID*5}px ${GRID*5}px, ${GRID*5}px ${GRID*5}px`;
+  el.style.backgroundImage =
+    `linear-gradient(to right, ${minor} 1px, transparent 1px),
+     linear-gradient(to bottom, ${minor} 1px, transparent 1px),
+     linear-gradient(to right, ${major} 1px, transparent 1px),
+     linear-gradient(to bottom, ${major} 1px, transparent 1px)`;
+  el.style.backgroundSize = `${GRID}px ${GRID}px, ${GRID}px ${GRID}px, ${GRID*5}px ${GRID*5}px, ${GRID*5}px ${GRID*5}px`;
 }
 
   
