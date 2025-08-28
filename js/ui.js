@@ -10,6 +10,8 @@ import {
   reloadGraphFromState, patchSelectedNodeData, patchSelectedEdgeData
 } from './graph.js';
 
+import { settings, setSetting, onSettingsChange, applyTheme } from './settings.js';
+
 export function wireUI(){
   // レイアウト
   document.getElementById('btn-random').onclick = layoutRandom;
@@ -152,14 +154,6 @@ function initGridOverlay(el){
   const major = isLightBg ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.25)'; // 太線（毎マス）
   const minor = isLightBg ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.10)'; // 細線（補助）
 
-  // 2本の linear-gradient で格子を作る（横と縦）
-  /*el.style.backgroundImage =
-    `linear-gradient(to right, ${minor} 1px, transparent 1px),
-     linear-gradient(to bottom, ${minor} 1px, transparent 1px)`;
-
-  // マス目間隔（GRID px）
-  el.style.backgroundSize = `${GRID}px ${GRID}px`;*/
-
   // 5マスごとに少し濃い「主グリッド」を重ねたい場合は、以下を追加で重ねてもOK
   el.style.backgroundImage =
     `linear-gradient(to right, ${minor} 1px, transparent 1px),
@@ -171,6 +165,45 @@ function initGridOverlay(el){
   el.style.backgroundRepeat = 'repeat';
 }
 
+// ========== テーマ切替 ==========
+document.getElementById('btn-theme').onclick = ()=>{
+  setSetting('theme', settings.theme === 'dark' ? 'light' : 'dark');
+  applyTheme();
+};
+
+// ========== 設定ダイアログ ==========
+const dlgSet = document.getElementById('dlg-settings');
+document.getElementById('btn-settings').onclick = ()=>{
+  // 現在値を反映
+  document.getElementById('set-theme').value = settings.theme;
+  document.getElementById('set-grid-opacity').value = String(settings.gridOpacity);
+  document.getElementById('set-snap').checked = !!settings.snap;
+  document.getElementById('set-contrast-min').value = String(settings.contrastMin);
+  dlgSet.showModal();
+};
+document.getElementById('settings-cancel').onclick = ()=> dlgSet.close();
+
+// フィールド変更→即時反映
+document.getElementById('set-theme').onchange = (e)=>{ setSetting('theme', e.target.value); applyTheme(); };
+document.getElementById('set-grid-opacity').oninput = (e)=>{
+  const v = Math.min(1, Math.max(0, Number(e.target.value)||0));
+  setSetting('gridOpacity', v);
+  // 既存の不透明度UIがあるならそちらも同期
+  const gridCanvas = document.getElementById('grid-canvas') || document.getElementById('grid-overlay');
+  if (gridCanvas) gridCanvas.style.opacity = String(v);
+};
+document.getElementById('set-snap').onchange = (e)=>{
+  setSetting('snap', !!e.target.checked);
+  // 既存の chk-snap と同期
+  const chk = document.getElementById('chk-snap'); if (chk){ chk.checked = settings.snap; chk.dispatchEvent(new Event('change')); }
+};
+document.getElementById('set-contrast-min').oninput = (e)=>{
+  const v = Math.max(1, Math.min(7, Number(e.target.value)||1.3));
+  setSetting('contrastMin', v);
+};
+
+// 設定変更の購読（必要なら何か再描画）
+onSettingsChange(()=>{ /* 今はテーマだけ applyTheme 済み。必要ならここで再描画呼び出し */ });
   
   // ---- 削除 ----
   document.getElementById('btn-delete').onclick = deleteSelection;
