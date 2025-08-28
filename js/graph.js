@@ -172,6 +172,13 @@ export function bootCytoscape(){
   ctx.stroke();
 };
 
+  // graph.js 内 bootCytoscape() で drawGrid を定義した後に追加
+document.addEventListener('app:themechanged', () => {
+  // CSS が反映されてから描くため rAF を一枚かませると安全
+  requestAnimationFrame(() => drawGrid());
+});
+
+
 // 初期化と同期（既存と同じ）
 const ro = new ResizeObserver(() => { resizeCanvas(); drawGrid(); });
 ro.observe(canvas.parentElement);
