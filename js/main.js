@@ -6,11 +6,10 @@ import { wireUI } from './ui.js';                    // UIと機能の配線
 
 applyTheme();                                        // 初期テーマ反映
 
-const container = document.getElementById('graph');  // Cytoscapeのコンテナ
+const container = document.getElementById('graph');
 let cy = null;
 
-// grid.init: グリッドの初期化。cyインスタンスは後から入るので getter で遅延参照
-grid.init(container, { getCy: () => cy });           // [API] グリッドを使える状態にする
+grid.init(container, { getCy: () => cy });           // [API] グリッドを使える状態にする（cyは遅延参照）
 
 cy = bootCytoscape();                                 // [HOOK] グラフ本体を起動
 wireUI(cy);                                           // [API] UIイベントをまとめて配線
