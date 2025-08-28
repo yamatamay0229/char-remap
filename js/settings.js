@@ -1,31 +1,26 @@
+// settings.js — 設定の真実の源泉 / 永続化 / テーマ切替
 const saved = JSON.parse(localStorage.getItem('settings') || '{}');
 
+/** [STORE] ここに全設定を集約。 */
 export const settings = {
   theme: saved.theme ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
-  snap: saved.snap ?? true,
+  gridSize: saved.gridSize ?? 50,
   gridOpacity: saved.gridOpacity ?? 0.25,
-  gridSize: saved.gridSize ?? 50,          // まだGRIDはstate.jsの定数を使ってOK。後で寄せ替え可
+  snap: saved.snap ?? true,
   autoContrast: saved.autoContrast ?? true,
-  contrastMin: saved.contrastMin ?? 1.3,   // ★ あなたの希望値
+  contrastMin: saved.contrastMin ?? 1.3,
 };
 
 const subs = new Set();
-function persist(){ localStorage.setItem('settings', JSON.stringify(settings)); }
-export function setSetting(key, value){
-  settings[key] = value;
-  persist();
-  subs.forEach(fn => fn(settings));
-}
-export function onSettingsChange(fn){
-  subs.add(fn); return ()=>subs.delete(fn);
-}
+const persist = () => localStorage.setItem('settings', JSON.stringify(settings));
 
-/* テーマ適用：<html data-theme="..."> */
+/** [API] 設定を1つ更新して購読者に通知。 */
+export function setSetting(k, v){ settings[k] = v; persist(); subs.forEach(fn => fn(settings)); }
+/** [API] 設定変更の購読を登録/解除。 */
+export function onSettingsChange(fn){ subs.add(fn); return () => subs.delete(fn); }
+
+/** [API] テーマ反映（<html data-theme> 更新）→ 次フレームで app:themechanged を通知。 */
 export function applyTheme(){
-  document.documentElement.setAttribute('data-theme', settings.theme);
-   // CSS変数が反映された次のフレームで通知
-  requestAnimationFrame(() => {
-    document.dispatchEvent(new CustomEvent('app:themechanged'));
-  });
+  document.documentElement.dataset.theme = settings.theme;
+  requestAnimationFrame(() => document.dispatchEvent(new CustomEvent('app:themechanged')));
 }
-applyTheme();
