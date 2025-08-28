@@ -72,7 +72,7 @@ export function bootCytoscape(){
     if (i >= 0){ state.characters[i].x = n.position().x; state.characters[i].y = n.position().y; }
   });
 
-  // === グリッド同期（zoom/pan） ===
+  /*// === グリッド同期（zoom/pan） ===
   const gridEl = document.getElementById('grid-overlay');
   const spacingBase = GRID; // モデル座標での1マス
 
@@ -117,7 +117,7 @@ export function bootCytoscape(){
       window.__gridSyncReq = null;
       syncGrid();
     });
-  });
+  });*/
 
   // ===== グリッド(Canvas) 同期 =====
   const canvas = document.getElementById('grid-canvas');
