@@ -72,6 +72,35 @@ export function bootCytoscape(){
     if (i >= 0){ state.characters[i].x = n.position().x; state.characters[i].y = n.position().y; }
   });
 
+  // === グリッド同期（zoom/pan） ===
+  const gridEl = document.getElementById('grid-overlay');
+  const spacingBase = GRID; // モデル座標での1マス
+
+  const syncGrid = () => {
+    if (!gridEl) return;
+    const z = cy.zoom();           // 現在のズーム
+    const pan = cy.pan();          // { x, y }（レンダリング座標）
+    const spacing = spacingBase * z;              // レンダリング座標でのマス間隔
+    const offX = ((pan.x % spacing) + spacing) % spacing; // 0..spacing-1 に正規化
+    const offY = ((pan.y % spacing) + spacing) % spacing;
+
+    // 背景のサイズと原点オフセットを更新
+    gridEl.style.backgroundSize = `${spacing}px ${spacing}px`;
+    gridEl.style.backgroundPosition = `${offX}px ${offY}px`;
+  };
+
+  // 初期反映 & イベント同期
+  syncGrid();
+  // viewport: ズーム/パンのたびに発火
+  cy.on('viewport', () => {
+    // 連続イベントの描画負荷を下げるため rAF でまとめる
+    if (window.__gridSyncReq) return;
+    window.__gridSyncReq = requestAnimationFrame(() => {
+      window.__gridSyncReq = null;
+      syncGrid();
+    });
+  });
+
   return cy;
 }
 
