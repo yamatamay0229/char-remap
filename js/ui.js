@@ -1,7 +1,7 @@
 import {
   state, setData, setCharacterTags,
   addCharacter, updateCharacter, addRelation, updateRelation,
-  findRelationIndex, settings
+  findRelationIndex, GRID, settings
 } from './state.js';
 
 import {
@@ -107,6 +107,66 @@ const chkAC = document.getElementById('chk-autocontrast');
 if (chkAC) {
   chkAC.checked = settings.autoContrast;
   chkAC.addEventListener('change', () => { settings.autoContrast = chkAC.checked; });
+}
+
+  // ===== グリッド線オーバーレイ初期化 =====
+const gridEl = document.getElementById('grid-overlay');
+initGridOverlay(gridEl);
+
+// 既存の「グリッドスナップ」チェックに連動して、グリッド線の表示も切り替え
+const snapChk = document.getElementById('chk-snap');
+const applyGridVisibility = () => {
+  gridEl.style.display = snapChk.checked ? 'block' : 'none';
+};
+applyGridVisibility();
+snapChk.addEventListener('change', applyGridVisibility);
+
+// 不透明度コントロール（スライダー ⇄ 数値）双方向同期
+const opSlider = document.getElementById('grid-opacity');
+const opNumber = document.getElementById('grid-opacity-num');
+const setGridOpacity = (v) => {
+  const val = Math.min(1, Math.max(0, Number(v) || 0));
+  gridEl.style.opacity = String(val);
+  opSlider.value = String(val);
+  opNumber.value = String(val);
+};
+opSlider.addEventListener('input', (e)=> setGridOpacity(e.target.value));
+opNumber.addEventListener('input', (e)=> setGridOpacity(e.target.value));
+
+// 初期反映
+setGridOpacity(opSlider.value);
+
+// ===== ヘルパ：グリッドの見た目を初期化 =====
+function initGridOverlay(el){
+  // 背景が明るい/暗いで線色を切替（お好みで固定でもOK）
+  const bg = (settings?.backgroundColor ?? '#ffffff').toLowerCase();
+  const isLightBg = (() => {
+    // 簡易輝度判定
+    const m = bg.replace('#','');
+    const n = m.length===3 ? m.split('').map(x=>x+x).join('') : m;
+    const r = parseInt(n.slice(0,2),16), g = parseInt(n.slice(2,4),16), b = parseInt(n.slice(4,6),16);
+    const L = (0.2126*(r/255)**2.2 + 0.7152*(g/255)**2.2 + 0.0722*(b/255)**2.2); // ざっくり
+    return L > 0.5;
+  })();
+
+  const major = isLightBg ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.25)'; // 太線（毎マス）
+  const minor = isLightBg ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.10)'; // 細線（補助）
+
+  // 2本の linear-gradient で格子を作る（横と縦）
+  el.style.backgroundImage =
+    `linear-gradient(to right, ${minor} 1px, transparent 1px),
+     linear-gradient(to bottom, ${minor} 1px, transparent 1px)`;
+
+  // マス目間隔（GRID px）
+  el.style.backgroundSize = `${GRID}px ${GRID}px`;
+
+  // 5マスごとに少し濃い「主グリッド」を重ねたい場合は、以下を追加で重ねてもOK
+  // el.style.backgroundImage =
+  //   `linear-gradient(to right, ${minor} 1px, transparent 1px),
+  //    linear-gradient(to bottom, ${minor} 1px, transparent 1px),
+  //    linear-gradient(to right, ${major} 1px, transparent 1px),
+  //    linear-gradient(to bottom, ${major} 1px, transparent 1px)`;
+  // el.style.backgroundSize = `${GRID}px ${GRID}px, ${GRID}px ${GRID}px, ${GRID*5}px ${GRID*5}px, ${GRID*5}px ${GRID*5}px`;
 }
 
   
