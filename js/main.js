@@ -1,6 +1,7 @@
 import { setData, setCharacterTags } from './state.js';
 import { bootCytoscape } from './graph.js';
 import { wireUI } from './ui.js';
+import { applyTheme } from './settings.js';
 
 async function tryFetchJson(url){
   try { const r = await fetch(url); if(!r.ok) throw 0; return await r.json(); } catch { return null; }
