@@ -110,8 +110,8 @@ if (chkAC) {
 }
 
   // ===== グリッド線オーバーレイ初期化 =====
-const gridEl = document.getElementById('grid-overlay');
-initGridOverlay(gridEl);
+const gridEl = document.getElementById('grid-canvas');
+//initGridOverlay(gridEl);
 
 // 既存の「グリッドスナップ」チェックに連動して、グリッド線の表示も切り替え
 const snapChk = document.getElementById('chk-snap');
