@@ -7,8 +7,8 @@ import {
 import {
   addNodeToGraph, addEdgeToGraph, deleteSelection,
   layoutRandom, layoutCircle, layoutCenterOnSelection,
-  reloadGraphFromState, patchSelectedNodeData, patchSelectedEdgeData,
-  /*setGridVisible,*/ syncGridNow
+  reloadGraphFromState, patchSelectedNodeData, patchSelectedEdgeData/*,
+  setGridVisible, syncGridNow*/
 } from './graph.js';
 import * as grid from './grid.js';
 import { settings, setSetting, onSettingsChange, applyTheme } from './settings.js';
