@@ -163,8 +163,22 @@ export function bootCytoscape(){
     // Cytoscape と同じ変換（拡縮の“軸”を完全一致させる）
     ctx.setTransform(dpr*z, 0, 0, dpr*z, dpr*pan.x, dpr*pan.y);
 
-    // Cytoscape と同じ変換（拡縮の“軸”を完全一致させる）
-  ctx.setTransform(dpr*z, 0, 0, dpr*z, dpr*pan.x, dpr*pan.y);
+    const { minor, major } = getColors();
+
+  // 画面内に見えるワールド範囲を算出
+  const left   = -pan.x / z;
+  const top    = -pan.y / z;
+  const right  = left + w / z;
+  const bottom = top  + h / z;
+
+  // 端をグリッドにスナップ
+  const startX = Math.floor(left  / spacingBase) * spacingBase;
+  const endX   = Math.ceil (right / spacingBase) * spacingBase;
+  const startY = Math.floor(top   / spacingBase) * spacingBase;
+  const endY   = Math.ceil (bottom/ spacingBase) * spacingBase;
+
+  // 見た目の線幅を1px前後に保つ
+  ctx.lineWidth = 1 / z;
 
     // 細グリッド
   ctx.strokeStyle = minor;
