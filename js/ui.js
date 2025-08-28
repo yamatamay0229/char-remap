@@ -17,6 +17,10 @@ export function wireUI(){
   document.getElementById('btn-random').onclick = layoutRandom;
   document.getElementById('btn-circle').onclick = layoutCircle;
   document.getElementById('btn-center').onclick = layoutCenterOnSelection;
+  document.getElementById('btn-theme').onclick = () => {
+  setSetting('theme', settings.theme === 'dark' ? 'light' : 'dark');
+  applyTheme(); // ← ここがイベント発火の入口
+};
 
   // ---- 人物追加ダイアログ ----
   const dlgP = document.getElementById('dlg-person');
