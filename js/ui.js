@@ -7,7 +7,8 @@ import {
 import {
   addNodeToGraph, addEdgeToGraph, deleteSelection,
   layoutRandom, layoutCircle, layoutCenterOnSelection,
-  reloadGraphFromState, patchSelectedNodeData, patchSelectedEdgeData
+  reloadGraphFromState, patchSelectedNodeData, patchSelectedEdgeData,
+  setGridVisible, syncGridNow
 } from './graph.js';
 
 import { settings, setSetting, onSettingsChange, applyTheme } from './settings.js';
@@ -121,11 +122,17 @@ const gridEl = document.getElementById('grid-canvas');
 
 // 既存の「グリッドスナップ」チェックに連動して、グリッド線の表示も切り替え
 const snapChk = document.getElementById('chk-snap');
-const applyGridVisibility = () => {
+/*const applyGridVisibility = () => {
   gridEl.style.display = snapChk.checked ? 'block' : 'none';
 };
-applyGridVisibility();
-snapChk.addEventListener('change', applyGridVisibility);
+applyGridVisibility();*/
+const applyGridSnap = () => {
+  // 表示状態の切り替えを graph 側APIで
+  setGridVisible(snapChk.checked);
+  // スナップ自体の論理フラグは settings へ
+  setSetting('snap', snapChk.checked);
+};
+snapChk.addEventListener('change', applyGridSnap);
 
 // 不透明度コントロール（スライダー ⇄ 数値）双方向同期
 const opSlider = document.getElementById('grid-opacity');
@@ -141,6 +148,8 @@ opNumber.addEventListener('input', (e)=> setGridOpacity(e.target.value));
 
 // 初期反映
 setGridOpacity(opSlider.value);
+  snapChk.checked = !!settings.snap;
+applyGridSnap();
 
 // ===== ヘルパ：グリッドの見た目を初期化 =====
 function initGridOverlay(el){
