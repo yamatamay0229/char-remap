@@ -19,6 +19,12 @@ button:hover,.btn:hover{background:#f3f4f6}
   background-repeat: repeat;
   /* background-image と background-size は JS で GRID に合わせて設定 */
 }
+#grid-canvas{
+  position: absolute;
+  inset: 0;
+  pointer-events: none;   /* 操作の邪魔をしない */
+  opacity: 0.25;          /* UIの透明度で変更（そのまま使える） */
+}
 
 /* dialog */
 dialog{border:none;border-radius:12px;padding:0;width:min(720px,92vw);box-shadow:0 10px 40px rgba(0,0,0,.15)}
