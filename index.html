@@ -29,6 +29,9 @@
       <button id="btn-import-json">読み込み(JSON)</button>
       <button id="btn-export-json">保存(JSON)</button>
       <input type="file" id="file-import-json" accept="application/json" hidden>
+      <span class="muted">｜</span>
+      <button id="btn-theme">ライト/ダーク</button>
+      <button id="btn-settings">設定</button>
     </div>
   </header>
 
@@ -95,6 +98,35 @@
       </form>
     </div>
   </dialog>
+
+<!-- 簡易の設定ダイアログ（最小版） -->
+<dialog id="dlg-settings">
+  <div class="modal">
+    <header>設定</header>
+    <div class="row">
+      <label>テーマ</label>
+      <select id="set-theme">
+        <option value="light">ライト</option>
+        <option value="dark">ダーク</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>グリッド不透明度</label>
+      <input type="range" id="set-grid-opacity" min="0" max="1" step="0.05">
+    </div>
+    <div class="row">
+      <label>スナップ</label>
+      <input type="checkbox" id="set-snap">
+    </div>
+    <div class="row">
+      <label>コントラスト閾値</label>
+      <input type="number" id="set-contrast-min" min="1" max="7" step="0.1">
+    </div>
+    <div class="actions">
+      <button type="button" id="settings-cancel" class="btn">閉じる</button>
+    </div>
+  </div>
+</dialog>
 
   <!-- Cytoscape -->
   <script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
