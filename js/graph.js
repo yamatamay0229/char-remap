@@ -77,17 +77,35 @@ export function bootCytoscape(){
   const spacingBase = GRID; // モデル座標での1マス
 
   const syncGrid = () => {
-    if (!gridEl) return;
-    const z = cy.zoom();           // 現在のズーム
-    const pan = cy.pan();          // { x, y }（レンダリング座標）
-    const spacing = spacingBase * z;              // レンダリング座標でのマス間隔
-    const offX = ((pan.x % spacing) + spacing) % spacing; // 0..spacing-1 に正規化
-    const offY = ((pan.y % spacing) + spacing) % spacing;
+  if (!gridEl) return;
 
-    // 背景のサイズと原点オフセットを更新
-    gridEl.style.backgroundSize = `${spacing}px ${spacing}px`;
-    gridEl.style.backgroundPosition = `${offX}px ${offY}px`;
-  };
+  const z = cy.zoom();
+  const pan = cy.pan();
+
+  // レンダリング座標での間隔
+  const s1 = spacingBase * z;      // 細グリッド
+  const s5 = s1 * 5;               // 主グリッド（5マス毎）
+
+  // ズレを“マス内のオフセット”に正規化（負値対応のため +s して %s）
+  const off = (v, s) => ((v % s) + s) % s;
+  const ox1 = Math.round(off(pan.x, s1));  // 細
+  const oy1 = Math.round(off(pan.y, s1));
+  const ox5 = Math.round(off(pan.x, s5));  // 太
+  const oy5 = Math.round(off(pan.y, s5));
+
+  // 4レイヤー分：横(細), 縦(細), 横(太), 縦(太)
+  gridEl.style.backgroundSize =
+    `${Math.round(s1)}px ${Math.round(s1)}px,` +   // 横(細)
+    `${Math.round(s1)}px ${Math.round(s1)}px,` +   // 縦(細)
+    `${Math.round(s5)}px ${Math.round(s5)}px,` +   // 横(太)
+    `${Math.round(s5)}px ${Math.round(s5)}px`;     // 縦(太)
+
+  gridEl.style.backgroundPosition =
+    `${ox1}px ${oy1}px,` + // 横(細)
+    `${ox1}px ${oy1}px,` + // 縦(細)
+    `${ox5}px ${oy5}px,` + // 横(太)
+    `${ox5}px ${oy5}px`;   // 縦(太)
+};
 
   // 初期反映 & イベント同期
   syncGrid();
