@@ -1,7 +1,7 @@
 import {
   state, setData, setCharacterTags,
   addCharacter, updateCharacter, addRelation, updateRelation,
-  findRelationIndex, GRID, settings
+  findRelationIndex, GRID
 } from './state.js';
 
 import {
