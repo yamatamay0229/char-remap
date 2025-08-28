@@ -9,6 +9,16 @@
   <script src="https://unpkg.com/cytoscape@3/dist/cytoscape.min.js"></script>
 </head>
 <body>
+  <!-- メニューバーの入れ物（JSで中身を描画） -->
+  <header id="menubar"></header>
+
+  <!-- キャンバス＋サイドバーの2カラム -->
+  <div class="stage">
+    <main id="graph">
+      <canvas id="grid-canvas" aria-hidden="true"></canvas>
+    </main>
+    <aside id="sidebar" aria-label="プロパティパネル"></aside>
+  </div>
   <header class="toolbar">
     <button id="btn-theme" title="ライト/ダーク切替">テーマ</button>
     <label class="sep"><input id="chk-snap" type="checkbox" checked> グリッド表示（スナップ）</label>
