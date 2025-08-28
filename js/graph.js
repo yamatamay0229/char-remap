@@ -1,4 +1,5 @@
 import { GRID, COLOR_BY_TYPE, state, removeCharacterById, removeRelationPredicate, settings } from './state.js';
+import { settings } from './settings.js';
 
 let cy;
 
@@ -27,6 +28,14 @@ function elementsFromState(){
     classes: r.mutual ? 'mutual' : ''
   }));
   return { nodes, edges };
+}
+
+function getColorsFromCssVars(){
+  const cs = getComputedStyle(document.documentElement);
+  return {
+    minor: cs.getPropertyValue('--grid-minor').trim() || 'rgba(0,0,0,.10)',
+    major: cs.getPropertyValue('--grid-major').trim() || 'rgba(0,0,0,.25)',
+  };
 }
 
 export function bootCytoscape(){
@@ -71,53 +80,6 @@ export function bootCytoscape(){
     const i = state.characters.findIndex(c => String(c.id ?? c.name) === id);
     if (i >= 0){ state.characters[i].x = n.position().x; state.characters[i].y = n.position().y; }
   });
-
-  /*// === グリッド同期（zoom/pan） ===
-  const gridEl = document.getElementById('grid-overlay');
-  const spacingBase = GRID; // モデル座標での1マス
-
-  const syncGrid = () => {
-  if (!gridEl) return;
-
-  const z = cy.zoom();
-  const pan = cy.pan();
-
-  // レンダリング座標での間隔
-  const s1 = spacingBase * z;      // 細グリッド
-  const s5 = s1 * 5;               // 主グリッド（5マス毎）
-
-  // ズレを“マス内のオフセット”に正規化（負値対応のため +s して %s）
-  const off = (v, s) => ((v % s) + s) % s;
-  const ox1 = Math.round(off(pan.x, s1));  // 細
-  const oy1 = Math.round(off(pan.y, s1));
-  const ox5 = Math.round(off(pan.x, s5));  // 太
-  const oy5 = Math.round(off(pan.y, s5));
-
-  // 4レイヤー分：横(細), 縦(細), 横(太), 縦(太)
-  gridEl.style.backgroundSize =
-    `${Math.round(s1)}px ${Math.round(s1)}px,` +   // 横(細)
-    `${Math.round(s1)}px ${Math.round(s1)}px,` +   // 縦(細)
-    `${Math.round(s5)}px ${Math.round(s5)}px,` +   // 横(太)
-    `${Math.round(s5)}px ${Math.round(s5)}px`;     // 縦(太)
-
-  gridEl.style.backgroundPosition =
-    `${ox1}px ${oy1}px,` + // 横(細)
-    `${ox1}px ${oy1}px,` + // 縦(細)
-    `${ox5}px ${oy5}px,` + // 横(太)
-    `${ox5}px ${oy5}px`;   // 縦(太)
-};
-
-  // 初期反映 & イベント同期
-  syncGrid();
-  // viewport: ズーム/パンのたびに発火
-  cy.on('viewport', () => {
-    // 連続イベントの描画負荷を下げるため rAF でまとめる
-    if (window.__gridSyncReq) return;
-    window.__gridSyncReq = requestAnimationFrame(() => {
-      window.__gridSyncReq = null;
-      syncGrid();
-    });
-  });*/
 
   // ===== グリッド(Canvas) 同期 =====
   const canvas = document.getElementById('grid-canvas');
@@ -263,23 +225,37 @@ export function deleteSelection(){
 }
 
 // ---- style functions (data優先の色) ----
-function nodeBgColor(ele){
-  const raw = ele.data('nodeColor') || '#f3f4f6';
-  return settings.autoContrast ? adjustContrastNear(raw, settings.backgroundColor, 1.0) : raw;
-}
 function nodeTextColor(ele){
-  const raw = ele.data('textColor') || '#111827';
-  const bg  = nodeBgColor(ele); // ノード文字はノード背景と比較
-  return settings.autoContrast ? adjustContrastNear(raw, bg, 1.3) : raw;
+  const raw = ele.data('textColor') || 'var(--node-fg)'; // デフォルトはCSS変数
+  const bg  = nodeBgColor(ele);
+  return settings.autoContrast ? adjustContrastNear(resolveColor(raw), resolveColor(bg), settings.contrastMin) : resolveColor(raw);
+}
+function nodeBgColor(ele){
+  const raw = ele.data('nodeColor') || 'var(--node-bg)';
+  // 背景に対しては低めでOK（読めていればよい）
+  return settings.autoContrast ? adjustContrastNear(resolveColor(raw), resolveColor(getCss('--bg')), 1.3) : resolveColor(raw);
 }
 function edgeLineColor(ele){
   const raw = ele.data('edgeColor') || (COLOR_BY_TYPE[ele.data('type')] || '#6b7280');
-  return settings.autoContrast ? adjustContrastNear(raw, settings.backgroundColor, 1.3) : raw;
+  return settings.autoContrast ? adjustContrastNear(resolveColor(raw), resolveColor(getCss('--bg')), settings.contrastMin) : resolveColor(raw);
 }
 function edgeTextColor(ele){
-  const raw = ele.data('textColor') || '#111827';
-  // ラベルは白地（text-background-color:#fff）上に描かれる想定
-  return settings.autoContrast ? adjustContrastNear(raw, '#ffffff', 1.3) : raw;
+  const raw = ele.data('textColor') || 'var(--edge-fg)';
+  // ラベル背景は白（既定）なのでそこ基準。必要ならCSS変数化してもOK
+  return settings.autoContrast ? adjustContrastNear(resolveColor(raw), '#ffffff', settings.contrastMin) : resolveColor(raw);
+}
+
+/* CSS変数や#hexを最終色に解決 */
+function getCss(varName){
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+}
+function resolveColor(c){
+  if (!c) return '#000000';
+  if (c.startsWith('var(')) {
+    const v = c.slice(4, -1).trim(); // var(--x)
+    return getCss(v) || '#000000';
+  }
+  return c;
 }
 
 // 編集適用用：選択中ノード/エッジの data を差し替える
