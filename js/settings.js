@@ -23,5 +23,9 @@ export function onSettingsChange(fn){
 /* テーマ適用：<html data-theme="..."> */
 export function applyTheme(){
   document.documentElement.setAttribute('data-theme', settings.theme);
+   // CSS変数が反映された次のフレームで通知
+  requestAnimationFrame(() => {
+    document.dispatchEvent(new CustomEvent('app:themechanged'));
+  });
 }
 applyTheme();
