@@ -32,7 +32,7 @@ html,body{height:100%}
 body{margin:0; background:var(--bg); color:var(--fg); font-family:system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif}
 .toolbar{display:flex; gap:.75rem; align-items:center; padding:.5rem .75rem; background:var(--panel); border-bottom:1px solid var(--border)}
 .toolbar .sep{margin-left:.5rem}
-#graph{position:relative; height:calc(100vh - 48px);}
+/*#graph{position:relative; height:calc(100vh - 48px);}*/
 #grid-canvas{position:absolute; inset:0; pointer-events:none; opacity:.25}
 button{background:var(--btn-bg); border:1px solid var(--btn-border); padding:.4rem .6rem; border-radius:.5rem; cursor:pointer}
 button:hover{background:var(--btn-bg-hover)}
