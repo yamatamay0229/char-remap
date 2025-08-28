@@ -153,12 +153,12 @@ function initGridOverlay(el){
   const minor = isLightBg ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.10)'; // 細線（補助）
 
   // 2本の linear-gradient で格子を作る（横と縦）
-  el.style.backgroundImage =
+  /*el.style.backgroundImage =
     `linear-gradient(to right, ${minor} 1px, transparent 1px),
      linear-gradient(to bottom, ${minor} 1px, transparent 1px)`;
 
   // マス目間隔（GRID px）
-  el.style.backgroundSize = `${GRID}px ${GRID}px`;
+  el.style.backgroundSize = `${GRID}px ${GRID}px`;*/
 
   // 5マスごとに少し濃い「主グリッド」を重ねたい場合は、以下を追加で重ねてもOK
   el.style.backgroundImage =
@@ -166,7 +166,9 @@ function initGridOverlay(el){
      linear-gradient(to bottom, ${minor} 1px, transparent 1px),
      linear-gradient(to right, ${major} 1px, transparent 1px),
      linear-gradient(to bottom, ${major} 1px, transparent 1px)`;
-  el.style.backgroundSize = `${GRID}px ${GRID}px, ${GRID}px ${GRID}px, ${GRID*5}px ${GRID*5}px, ${GRID*5}px ${GRID*5}px`;
+  //el.style.backgroundSize = `${GRID}px ${GRID}px, ${GRID}px ${GRID}px, ${GRID*5}px ${GRID*5}px, ${GRID*5}px ${GRID*5}px`;
+  // サイズと位置は graph.js の syncGrid() が都度上書きします
+  el.style.backgroundRepeat = 'repeat';
 }
 
   
