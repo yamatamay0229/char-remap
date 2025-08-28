@@ -1,4 +1,4 @@
-import { GRID, COLOR_BY_TYPE, state, removeCharacterById, removeRelationPredicate, settings } from './state.js';
+import { GRID, COLOR_BY_TYPE, state, removeCharacterById, removeRelationPredicate } from './state.js';
 import { settings } from './settings.js';
 
 let cy;
