@@ -17,9 +17,14 @@ export function renderMenubar(container, initial = {}) {
       <button class="menu-btn" data-cmd="loadJson">読み込み</button>
     </div>
     <div class="menu-group" style="margin-left:auto">
-      <label class="menu-toggle">
+      <label class="menu-toggle" title="グリッド表示">
         <input id="toggle-grid" type="checkbox" ${initial.gridVisible ? 'checked' : ''}>
         グリッド
+      </label>
+      <label class="menu-toggle" title="グリッド不透明度">
+        不透明度
+        <input id="grid-opacity-range" type="range" min="0" max="1" step="0.05" value="${initial.gridOpacity ?? 0.25}" style="width:120px">
+        <input id="grid-opacity-num" type="number" min="0" max="1" step="0.05" value="${initial.gridOpacity ?? 0.25}" style="width:64px">
       </label>
       <button class="menu-btn" data-cmd="toggleTheme">テーマ</button>
     </div>
@@ -33,7 +38,7 @@ export function renderMenubar(container, initial = {}) {
     document.dispatchEvent(new CustomEvent('app:command', { detail: { name } }));
   });
 
-  // グリッド表示切替は detail: {name:'gridVisible', value}
+  // グリッド表示切替
   const gridToggle = container.querySelector('#toggle-grid');
   if (gridToggle) {
     gridToggle.addEventListener('change', () => {
@@ -41,5 +46,19 @@ export function renderMenubar(container, initial = {}) {
         detail: { name: 'gridVisible', value: gridToggle.checked }
       }));
     });
+  }
+
+  // 不透明度（range/num 双方向同期）
+  const $range = container.querySelector('#grid-opacity-range');
+  const $num   = container.querySelector('#grid-opacity-num');
+  const emit = (v) => {
+    document.dispatchEvent(new CustomEvent('app:command', {
+      detail: { name: 'gridOpacity', value: Number(v) }
+    }));
+  };
+  if ($range && $num) {
+    const sync = (v) => { $range.value = v; $num.value = v; emit(v); };
+    $range.addEventListener('input', e => sync(e.target.value));
+    $num.addEventListener('input',   e => sync(e.target.value));
   }
 }
