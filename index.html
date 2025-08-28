@@ -1,135 +1,24 @@
 <!doctype html>
-<html lang="ja">
+<html lang="ja" data-theme="light">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>人物相関図</title>
-  <link rel="stylesheet" href="./style.css" />
+  <title>char-relmap</title>
+  <link rel="stylesheet" href="./style.css?v=split1" />
+  <!-- Cytoscape (CDN) -->
+  <script src="https://unpkg.com/cytoscape@3/dist/cytoscape.min.js"></script>
 </head>
 <body>
   <header class="toolbar">
-    <div class="left"><strong>人物相関図</strong></div>
-    <div class="right">
-      <button id="btn-add-person">人物を追加</button>
-      <button id="btn-add-relation">関係を追加</button>
-      <button id="btn-edit" class="">選択を編集</button>
-      <button id="btn-delete" class="danger">選択を削除</button>
-      <span class="muted">｜</span>
-      <button id="btn-random">ランダム配置</button>
-      <button id="btn-circle">円形配置</button>
-      <button id="btn-center">選択中心配置</button>
-      <label class="snap"><input type="checkbox" id="chk-snap" checked> グリッドスナップ</label>
-      <label class="snap" style="display:inline-flex;align-items:center;gap:.5rem">透明度
-        <input id="grid-opacity" type="range" min="0" max="1" step="0.05" value="0.25" style="width:120px">
-        <input id="grid-opacity-num" type="number" min="0" max="1" step="0.05" value="0.25" style="width:64px">
-      </label>
-      <label class="snap"><input type="checkbox" id="chk-autocontrast" checked>自動コントラスト</label>
-      <span class="muted">｜</span>
-      <button id="btn-attr-tags">属性タグを編集</button>
-      <button id="btn-import-json">読み込み(JSON)</button>
-      <button id="btn-export-json">保存(JSON)</button>
-      <input type="file" id="file-import-json" accept="application/json" hidden>
-      <span class="muted">｜</span>
-      <button id="btn-theme">ライト/ダーク</button>
-      <button id="btn-settings">設定</button>
-    </div>
+    <button id="btn-theme" title="ライト/ダーク切替">テーマ</button>
+    <label class="sep"><input id="chk-snap" type="checkbox" checked> グリッド表示（スナップ）</label>
+    <label>不透明度 <input id="grid-opacity" type="range" min="0" max="1" step="0.05" value="0.25">
+      <input id="grid-opacity-num" type="number" min="0" max="1" step="0.05" value="0.25">
+    </label>
   </header>
 
-  <main id="graph">
-    <!-- <div id="grid-overlay" aria-hidden="true"></div> -->
-    <canvas id="grid-canvas" aria-hidden="true"></canvas>
-  </main>
+  <main id="graph"><canvas id="grid-canvas" aria-hidden="true"></canvas></main>
 
-  <!-- 人物追加 -->
-  <dialog id="dlg-person">
-    <div class="modal">
-      <header>人物を追加</header>
-      <form id="form-person" method="dialog">
-        <div class="row"><label for="p-id">ID（英数字）</label><input id="p-id" name="id" type="text" required></div>
-        <div class="row"><label for="p-name">名前</label><input id="p-name" name="name" type="text" required></div>
-        <div class="row"><label for="p-image">画像URL（任意）</label><input id="p-image" name="image" type="text" placeholder="./images/sample.png"></div>
-        <div class="row"><label for="p-bg">背景色（任意）</label><input id="p-bg" name="bg" type="color" value="#f3f4f6"></div>
-        <div class="row"><label for="p-fg">文字色（任意）</label><input id="p-fg" name="fg" type="color" value="#111827"></div>
-        <fieldset id="p-attrs" class="modal">
-          <legend class="muted">属性（共通タグ）</legend>
-          <!-- ここに動的にタグ入力を生成 -->
-        </fieldset>
-        <div class="actions">
-          <button type="button" id="p-cancel" class="btn">キャンセル</button>
-          <button type="submit" class="btn">追加</button>
-        </div>
-      </form>
-    </div>
-  </dialog>
-
-  <!-- 関係追加 -->
-  <dialog id="dlg-relation">
-    <div class="modal">
-      <header>関係を追加</header>
-      <form id="form-relation" method="dialog">
-        <div class="row"><label for="r-from">From</label><select id="r-from" name="from" required></select></div>
-        <div class="row"><label for="r-to">To</label><select id="r-to" name="to" required></select></div>
-        <div class="row"><label for="r-label">関係名</label><input id="r-label" name="label" type="text" required></div>
-        <div class="row"><label for="r-strength">強さ（1-5）</label><input id="r-strength" name="strength" type="number" min="1" max="5" value="3" required></div>
-        <div class="row"><label for="r-type">種別</label><input id="r-type" name="type" type="text" placeholder="感情 / 家族 / 敵対"></div>
-        <div class="row"><label for="r-mutual">相互</label>
-          <select id="r-mutual" name="mutual"><option value="false" selected>いいえ</option><option value="true">はい</option></select>
-        </div>
-        <div class="row"><label for="r-line">線色（任意）</label><input id="r-line" name="line" type="color" value="#6b7280"></div>
-        <div class="row"><label for="r-text">文字色（任意）</label><input id="r-text" name="text" type="color" value="#111827"></div>
-        <div class="actions">
-          <button type="button" id="r-cancel" class="btn">キャンセル</button>
-          <button type="submit" class="btn">追加</button>
-        </div>
-      </form>
-    </div>
-  </dialog>
-
-  <!-- 選択編集（人物または関係） -->
-  <dialog id="dlg-edit">
-    <div class="modal">
-      <header id="edit-title">編集</header>
-      <form id="form-edit" method="dialog">
-        <div id="edit-fields"><!-- 動的に差し込む --></div>
-        <div class="actions">
-          <button type="button" id="e-cancel" class="btn">キャンセル</button>
-          <button type="submit" class="btn">保存</button>
-        </div>
-      </form>
-    </div>
-  </dialog>
-
-<!-- 簡易の設定ダイアログ（最小版） -->
-<dialog id="dlg-settings">
-  <div class="modal">
-    <header>設定</header>
-    <div class="row">
-      <label>テーマ</label>
-      <select id="set-theme">
-        <option value="light">ライト</option>
-        <option value="dark">ダーク</option>
-      </select>
-    </div>
-    <div class="row">
-      <label>グリッド不透明度</label>
-      <input type="range" id="set-grid-opacity" min="0" max="1" step="0.05">
-    </div>
-    <div class="row">
-      <label>スナップ</label>
-      <input type="checkbox" id="set-snap">
-    </div>
-    <div class="row">
-      <label>コントラスト閾値</label>
-      <input type="number" id="set-contrast-min" min="1" max="7" step="0.1">
-    </div>
-    <div class="actions">
-      <button type="button" id="settings-cancel" class="btn">閉じる</button>
-    </div>
-  </div>
-</dialog>
-
-  <!-- Cytoscape -->
-  <script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
   <script type="module" src="./js/main.js?v=split1"></script>
 </body>
 </html>
