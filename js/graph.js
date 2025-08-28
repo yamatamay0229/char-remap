@@ -1,7 +1,6 @@
 import { GRID, COLOR_BY_TYPE, state, removeCharacterById, removeRelationPredicate } from './state.js';
 import { settings } from './settings.js';
-
-let cy;
+import * as grid from './grid.js';
 
 function elementsFromState(){
   const nodes = state.characters.map(c => ({
@@ -80,113 +79,11 @@ export function bootCytoscape(){
     const i = state.characters.findIndex(c => String(c.id ?? c.name) === id);
     if (i >= 0){ state.characters[i].x = n.position().x; state.characters[i].y = n.position().y; }
   });
+  // viewportイベントでグリッドの再描画を“予約”
+  cy.on('viewport', () => grid.scheduleRedraw()); // ← これだけでOK
 
-  // ===== グリッド(Canvas) 同期 =====
-  const canvas = document.getElementById('grid-canvas');
-  const ctx = canvas.getContext('2d');
-
-  // コンテナサイズに合わせてキャンバスを実ピクセルでリサイズ
-  const resizeCanvas = () => {
-    const rect = canvas.parentElement.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    canvas.style.width  = rect.width + 'px';
-    canvas.style.height = rect.height + 'px';
-    canvas.width  = Math.round(rect.width  * dpr);
-    canvas.height = Math.round(rect.height * dpr);
-    //ctx.setTransform(dpr,0,0,dpr,0,0); // 以降はCSSピクセル基準で描く
-  };
-
-  // 背景に応じた線色（明/暗）
-  const getColors = () => {
-    const bg = (settings?.backgroundColor ?? '#ffffff').toLowerCase();
-    // 簡易輝度
-    const hex = bg.replace('#',''); const n = hex.length===3 ? hex.split('').map(x=>x+x).join('') : hex;
-    const r=parseInt(n.slice(0,2),16)/255, g=parseInt(n.slice(2,4),16)/255, b=parseInt(n.slice(4,6),16)/255;
-    const lum = 0.2126*r*r + 0.7152*g*g + 0.0722*b*b; // ざっくり
-    return lum>0.5
-      ? { minor:'rgba(0,0,0,0.10)', major:'rgba(0,0,0,0.25)' }
-      : { minor:'rgba(255,255,255,0.10)', major:'rgba(255,255,255,0.25)' };
-  };
-
-  const spacingBase = GRID; // モデル座標での1マス
-
-  const drawGrid = () => {
-    const rect = canvas.getBoundingClientRect();
-    const w = rect.width, h = rect.height;
-    const dpr = window.devicePixelRatio || 1;
-
-    // クリア（前回の変換に依存しない）
-    ctx.setTransform(1,0,0,1,0,0);
-    ctx.clearRect(0,0,w,h);
-
-    const z   = cy.zoom();
-    const pan = cy.pan();   // 描画座標系でのパン（px）
-
-    // Cytoscape と同じ変換（拡縮の“軸”を完全一致させる）
-    ctx.setTransform(dpr*z, 0, 0, dpr*z, dpr*pan.x, dpr*pan.y);
-
-    const { minor, major } = getColorsFromCssVars();
-
-  // 画面内に見えるワールド範囲を算出
-  const left   = -pan.x / z;
-  const top    = -pan.y / z;
-  const right  = left + w / z;
-  const bottom = top  + h / z;
-
-  // 端をグリッドにスナップ
-  const startX = Math.floor(left  / spacingBase) * spacingBase;
-  const endX   = Math.ceil (right / spacingBase) * spacingBase;
-  const startY = Math.floor(top   / spacingBase) * spacingBase;
-  const endY   = Math.ceil (bottom/ spacingBase) * spacingBase;
-
-  // 見た目の線幅を1px前後に保つ
-  ctx.lineWidth = 1 / z;
-
-    // 細グリッド
-  ctx.strokeStyle = minor;
-  ctx.beginPath();
-  for (let x = startX; x <= endX; x += spacingBase) {
-    ctx.moveTo(x, top);
-    ctx.lineTo(x, bottom);
-  }
-  for (let y = startY; y <= endY; y += spacingBase) {
-    ctx.moveTo(left, y);
-    ctx.lineTo(right, y);
-  }
-  ctx.stroke();
-
-  // 主グリッド（5マスごと）
-  ctx.strokeStyle = major;
-  ctx.beginPath();
-  const step5 = spacingBase * 5;
-  const startX5 = Math.floor(startX / step5) * step5;
-  const startY5 = Math.floor(startY / step5) * step5;
-  for (let x = startX5; x <= endX; x += step5) {
-    ctx.moveTo(x, top);
-    ctx.lineTo(x, bottom);
-  }
-  for (let y = startY5; y <= endY; y += step5) {
-    ctx.moveTo(left, y);
-    ctx.lineTo(right, y);
-  }
-  ctx.stroke();
-};
-
-  // graph.js 内 bootCytoscape() で drawGrid を定義した後に追加
-document.addEventListener('app:themechanged', () => {
-  // CSS が反映されてから描くため rAF を一枚かませると安全
-  requestAnimationFrame(() => drawGrid());
-});
-
-
-// 初期化と同期（既存と同じ）
-const ro = new ResizeObserver(() => { resizeCanvas(); drawGrid(); });
-ro.observe(canvas.parentElement);
-resizeCanvas();
-drawGrid();
-
-const schedule = (() => { let req=null; return ()=>{ if(req) return; req=requestAnimationFrame(()=>{req=null; drawGrid();}); }; })();
-cy.on('viewport', schedule);
+  // 初回にそろえる
+  grid.redraw();
 
   return cy;
 }
