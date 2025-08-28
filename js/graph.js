@@ -39,7 +39,7 @@ function getColorsFromCssVars(){
 
 export function bootCytoscape(){
   const { nodes, edges } = elementsFromState();
-  cy = cytoscape({
+  const cy = cytoscape({
     container: document.getElementById('graph'),
     elements: { nodes, edges },
     layout: { name: 'random' },
