@@ -1,89 +1,38 @@
 :root{
   /* ベース */
-  --bg:#ffffff;
-  --fg:#111827;
-  --panel:#f9fafb;
-  --border:#e5e7eb;
+  --bg:#ffffff; --fg:#111827;
+  --panel:#f9fafb; --border:#e5e7eb;
 
-  /* ボタン */
-  --btn-bg:#f9fafb;
-  --btn-bg-hover:#f3f4f6;
-  --btn-border:#d1d5db;
-  --btn-danger-fg:#b91c1c;
-  --btn-danger-bg:#fff1f2;
-  --btn-danger-border:#fca5a5;
-
-  /* グリッド（Canvas用） */
+  /* グリッド（輝度はテーマで切替） */
   --grid-minor: rgba(0,0,0,.10);
   --grid-major: rgba(0,0,0,.25);
 
-  /* ノード/エッジのデフォルト（ユーザー色が無い時） */
-  --node-bg:#f3f4f6;
-  --node-fg:#111827;
+  /* ノード/エッジの既定 */
+  --node-bg:#f3f4f6; --node-fg:#111827;
   --edge-fg:#111827;
+
+  /* ボタン */
+  --btn-bg:#f9fafb; --btn-bg-hover:#f3f4f6; --btn-border:#d1d5db;
 }
 :root[data-theme="dark"]{
-  --bg:#0b0b0f;
-  --fg:#e5e7eb;
-  --panel:#111318;
-  --border:#1f2430;
-
-  --btn-bg:#171a21;
-  --btn-bg-hover:#1c2028;
-  --btn-border:#2a3242;
-  --btn-danger-fg:#fecaca;
-  --btn-danger-bg:#2a0f12;
-  --btn-danger-border:#fecaca;
+  --bg:#0b0b0f; --fg:#e5e7eb;
+  --panel:#111318; --border:#1f2430;
 
   --grid-minor: rgba(255,255,255,.12);
   --grid-major: rgba(255,255,255,.28);
 
-  --node-bg:#1a1d24;
-  --node-fg:#e5e7eb;
+  --node-bg:#1a1d24; --node-fg:#e5e7eb;
   --edge-fg:#e5e7eb;
+
+  --btn-bg:#171a21; --btn-bg-hover:#1c2028; --btn-border:#2a3242;
 }
 
-/* 既存パーツを少しだけ変数に寄せる（徐々に置換でOK） */
-body{ background:var(--bg); color:var(--fg); }
-.toolbar{ background:var(--panel); border-bottom:1px solid var(--border); }
-button,.btn{ background:var(--btn-bg); border:1px solid var(--btn-border); }
-button:hover,.btn:hover{ background:var(--btn-bg-hover); }
-.danger{ color:var(--btn-danger-fg); border-color:var(--btn-danger-border); background:var(--btn-danger-bg); }
-#graph{ position:relative; }
 *{box-sizing:border-box}
 html,body{height:100%}
-body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;color:#111827}
-.toolbar{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;background:#fff;border-bottom:1px solid #e5e7eb}
-.toolbar .right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-button,.btn{padding:6px 10px;border:1px solid #d1d5db;border-radius:8px;background:#f9fafb;cursor:pointer}
-button:hover,.btn:hover{background:#f3f4f6}
-.snap{user-select:none}
-.muted{color:#6b7280}
-.danger{color:#b91c1c;border-color:#fca5a5;background:#fff1f2}
-#graph{height:calc(100vh - 56px); position: relative;}
-/* グリッド線オーバーレイ */
-#grid-overlay{
-  position: absolute;
-  inset: 0;              /* top:0; right:0; bottom:0; left:0; の省略 */
-  pointer-events: none;  /* 操作の邪魔をしない */
-  opacity: 0.25;         /* 初期不透明度（UIで変更） */
-  background-position: 0 0;
-  background-repeat: repeat;
-  /* background-image と background-size は JS で GRID に合わせて設定 */
-}
-#grid-canvas{
-  position: absolute;
-  inset: 0;
-  pointer-events: none;   /* 操作の邪魔をしない */
-  opacity: 0.25;          /* UIの透明度で変更（そのまま使える） */
-}
-
-/* dialog */
-dialog{border:none;border-radius:12px;padding:0;width:min(720px,92vw);box-shadow:0 10px 40px rgba(0,0,0,.15)}
-.modal{display:grid;gap:12px;padding:16px}
-.modal header{font-weight:700;font-size:16px}
-.modal form{display:grid;gap:10px}
-.row{display:grid;grid-template-columns:140px 1fr;align-items:center;gap:10px}
-.row>label{color:#374151}
-.row input[type="text"],.row input[type="number"],.row select{width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px}
-.modal .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:6px}
+body{margin:0; background:var(--bg); color:var(--fg); font-family:system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif}
+.toolbar{display:flex; gap:.75rem; align-items:center; padding:.5rem .75rem; background:var(--panel); border-bottom:1px solid var(--border)}
+.toolbar .sep{margin-left:.5rem}
+#graph{position:relative; height:calc(100vh - 48px);}
+#grid-canvas{position:absolute; inset:0; pointer-events:none; opacity:.25}
+button{background:var(--btn-bg); border:1px solid var(--btn-border); padding:.4rem .6rem; border-radius:.5rem; cursor:pointer}
+button:hover{background:var(--btn-bg-hover)}
