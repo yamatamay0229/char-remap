@@ -8,7 +8,7 @@ export const settings = {
   gridOpacity: saved.gridOpacity ?? 0.25,
   snap: saved.snap ?? true,
   autoContrast: saved.autoContrast ?? true,
-  contrastMin: saved.contrastMin ?? 1.3,
+  contrastMin: saved.contrastMin ?? 1.3,  // 近似色補正の最小コントラスト
 };
 
 const subs = new Set();
