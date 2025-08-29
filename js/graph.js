@@ -60,7 +60,7 @@ export function bootCytoscape(){
     ], 
     layout:{ name:'preset' },
     // ← ズーム感度アップ
-    wheelSensitivity: 0.45,
+    wheelSensitivity: 1,
     minZoom: 0.1,
     maxZoom: 4,
     boxSelectionEnabled: true
