@@ -2,7 +2,7 @@
 
 import { applyTheme, settings, setSetting } from './settings.js';
 import * as grid from './grid.js';
-import { bootCytoscape, applySheet } from './graph.js';
+import { addNodeVisual, bootCytoscape, applySheet } from './graph.js';
 import { renderMenubar } from './ui/menubar.js';
 import { renderSidebar, showEmpty, showNodeDetail, showEdgeDetail } from './ui/sidebar.js';
 
@@ -47,7 +47,22 @@ document.addEventListener('app:command', (e) => {
   try {
     switch (name) {
       // 追加/編集/削除（No-Op前提）
-      case 'newCharacter': /* TODO */ break;
+      // app:command の switch に差し替え or 追加
+    case 'newCharacter': {
+      // 1) stateを更新
+      const id = addCharacter({ name: 'New Character' });
+
+      // 2) 画面中央のモデル座標を計算
+      const ext = cy.extent(); // 可視範囲（モデル座標）
+      const pos = { x: (ext.x1 + ext.x2) / 2, y: (ext.y1 + ext.y2) / 2 };
+
+      // 3) ノードを描画に追加
+      addNodeVisual({ id, name: 'New Character', nodeColor: '#cccccc', textColor: '#111111', pos });
+
+      // 4) 追加ノードを選択
+      cy.$id(id).select();
+      break;
+    }
       case 'updateCharacter': /* TODO */ break;
       case 'removeCharacter': /* TODO */ break;
 
