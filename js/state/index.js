@@ -120,9 +120,47 @@ export function removeCharacterById(id) {
 }
 
 // Relations CRUD
-export function addRelation(/*r*/){ /* TODO return id */ }
-export function updateRelation(/*id, patch*/){ /* TODO */ }
-export function removeRelationById(/*id*/){ /* TODO */ }
+export function addRelation(input){
+  if (!input) throw new Error('関係データが空です');
+  const from = String(input.from), to = String(input.to);
+  if (from === to) throw new Error('同一人物には接続できません');
+  if (!getCharacter(from) || !getCharacter(to)) throw new Error('人物IDが不正です');
+
+  const id = String(input.id ?? generateId('rel'));
+  state.relations.push({
+    id,
+    from, to,
+    label: input.label ?? '',
+    strength: Number(input.strength ?? 3),
+    type: input.type ?? '',
+    mutual: !!input.mutual,
+    edgeColor: input.edgeColor ?? null,
+    textColor: input.textColor ?? null
+  });
+  return id;
+}
+
+export function updateRelation(id, patch={}){
+  const i = state.relations.findIndex(r => String(r.id) === String(id));
+  if (i < 0) throw new Error('関係が見つかりません');
+  const prev = state.relations[i];
+  const next = { ...prev, ...patch };
+  // from/to の変更が来た場合も検証
+  if (next.from === next.to) throw new Error('同一人物には接続できません');
+  if (!getCharacter(next.from) || !getCharacter(next.to)) throw new Error('人物IDが不正です');
+  state.relations[i] = next;
+}
+
+export function removeRelationById(id){
+  state.relations = state.relations.filter(r => String(r.id) !== String(id));
+  // シート内のウェイポイントも掃除（将来のため）
+  state.sheets.forEach(s => {
+    if (s.waypoints && s.waypoints[id]) delete s.waypoints[id];
+    if (s.visible?.relations) {
+      s.visible.relations = s.visible.relations.filter(x => x !== id);
+    }
+  });
+}
 
 // Groups CRUD
 export function addGroup(/*g*/){ /* TODO return id */ }
