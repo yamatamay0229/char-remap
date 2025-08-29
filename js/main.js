@@ -2,7 +2,10 @@
 
 import { applyTheme, settings, setSetting } from './settings.js';
 import * as grid from './grid.js';
-import { addNodeVisual, bootCytoscape, applySheet } from './graph.js';
+import { 
+  addNodeVisual, bootCytoscape, applySheet,
+  addEdgeVisual, updateEdgeVisual, removeVisualById
+} from './graph.js';
 import { renderMenubar } from './ui/menubar.js';
 import { renderSidebar, showEmpty, showNodeDetail, showEdgeDetail } from './ui/sidebar.js';
 
@@ -66,9 +69,46 @@ document.addEventListener('app:command', (e) => {
       case 'updateCharacter': /* TODO */ break;
       case 'removeCharacter': /* TODO */ break;
 
-      case 'newRelation': /* TODO */ break;
-      case 'updateRelation': /* TODO */ break;
-      case 'removeRelation': /* TODO */ break;
+      case 'newRelation': {
+        // 明示指定がなければ選択中から拾う
+        let { from, to, label, strength, mutual } = rest;
+        if (!from || !to) {
+          const sels = cy.$('node:selected');
+          if (sels.length !== 2) { console.warn('2つの人物を選択してください'); break; }
+          from = sels[0].id();
+          to   = sels[1].id();
+        }
+        try{
+          const id = addRelation({ from, to, label: label||'', strength: strength??3, mutual: !!mutual, edgeColor:'#888888', textColor:'#ffffff' });
+          addEdgeVisual({ id, from, to, label, strength, mutual, edgeColor:'#888888', textColor:'#ffffff' });
+          cy.getElementById(id).select();
+        }catch(e){
+          console.warn('[newRelation] failed:', e.message||e);
+        }
+        break;
+      }
+
+      case 'updateRelation': {
+        const { id, patch } = rest;
+        try {
+          updateRelation(id, patch||{});
+          updateEdgeVisual(id, patch||{});
+        } catch(e) {
+          console.warn('[updateRelation] failed:', e.message||e);
+        }
+        break;
+      }
+
+      case 'removeRelation': {
+        const { id } = rest;
+        try {
+          removeRelationById(id);
+          removeVisualById(id);
+        } catch(e) {
+          console.warn('[removeRelation] failed:', e.message||e);
+        }
+        break;
+      }
 
       // グリッド/テーマ/サイドバー
       case 'gridVisible': grid.setVisible(!!rest.value); setSetting('snap', !!rest.value); break;
