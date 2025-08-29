@@ -1,6 +1,7 @@
 // Cytoscape起動/シート反映など（No-Opで安全に）
 
-import { listCharacters, listRelations } from './state/index.js';
+import { setNodePos, getSheet, listCharacters, listRelations } from './state/index.js';
+import { settings } from './settings.js';
 
 let cy = null;
 
@@ -19,12 +20,32 @@ export function bootCytoscape(){
   return cy;
 }
 
-export function applySheet(/*sheetId*/){
+// シート適用（座標だけ反映）
+export function applySheet(sheetId){
   if (!cy) return;
   console.debug('[graph.applySheet] noop');
+  const s = getSheet(sheetId);
+  if (!s || !s.positions) return;
+  cy.nodes().forEach(n => {
+    const p = s.positions[n.id()];
+    if (p) n.position(p);
+  });
 }
 
-export function addNodeVisual(/*character*/){ /* TODO */ }
+export function addNodeVisual(character){
+  if (!cy) return;
+  const { id, name, nodeColor, textColor, pos } = character;
+  cy.add({
+    group: 'nodes',
+    data: {
+      id,
+      label: name || id,
+      nodeColor: nodeColor || '#cccccc',
+      textColor: textColor || '#111111'
+    },
+    position: pos || { x: 0, y: 0 }
+  });
+}
 export function updateNodeVisual(/*id, patch*/){ /* TODO */ }
 export function removeVisualById(/*id*/){ /* TODO */ }
 export function addEdgeVisual(/*relation*/){ /* TODO */ }
@@ -39,6 +60,14 @@ export function bindViewportSync(cy){
   });
 }
 export function bindDragSnap(cy){
-  if (!cy) return;
-  // TODO: drag during snap / dragfree -> state.setNodePos(...)
+  cy.on('dragfree', 'node', (evt) => {
+    const n = evt.target;
+    const p = n.position();
+    const sheetId = settings.activeSheetId || 'default';
+    try {
+      setNodePos(sheetId, n.id(), { x: p.x, y: p.y });
+    } catch (e) {
+      console.warn('[dragfree] setNodePos failed', e);
+    }
+  });
 }
