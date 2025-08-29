@@ -15,24 +15,35 @@ export function bootCytoscape(){
     elements: [], style: [
       // ノードの基本
       { selector: 'node', style: {
-        'background-color': 'data(nodeColor)',
+        'shape': 'round-rectangle',
+        'width': 120,
+        'height': 140,
+        'background-color': '#e5e7eb',
+        'border-width': 2,
+        'border-color': '#9ca3af',
+        'background-image': 'data(image)',                 // 画像URLを data(image) に入れる
+        'background-fit': 'cover',
+        'background-clip': 'node',
+        'background-image-crossorigin': 'anonymous',
         'label': 'data(label)',
         'color': 'data(textColor)',
-        'text-valign': 'center',
+        'font-size': 14,
+        'text-wrap': 'wrap',
+        'text-max-width': 110,
         'text-halign': 'center',
-        'font-size': 12,
-        'border-width': 1,
-        'border-color': '#888'
+        'text-valign': 'bottom',
+        'text-margin-y': 8
       }},
       // エッジの基本
       { selector: 'edge', style: {
-        'width': 'mapData(strength, 1, 8, 1, 8)',
+        'curve-style': 'bezier',
+        'width': 'mapData(strength, 1, 8, 2, 8)',
         'line-color': 'data(edgeColor)',
         'target-arrow-color': 'data(edgeColor)',
         'source-arrow-color': 'data(edgeColor)',
         'target-arrow-shape': 'triangle',
-        'curve-style': 'bezier',
         'label': 'data(label)',
+        'font-size': 12,
         'color': 'data(textColor)',
         'text-background-opacity': 0.7,
         'text-background-color': '#000',
@@ -43,12 +54,23 @@ export function bootCytoscape(){
       { selector: 'edge[mutual = 1]', style: {
         'source-arrow-shape': 'triangle'
       }},
+      // 選択時の強調
+      { selector: 'node:selected', style: { 'border-color': '#6366f1', 'border-width': 3 } },
+      { selector: 'edge:selected', style: { 'line-color': '#6366f1', 'target-arrow-color': '#6366f1', 'source-arrow-color': '#6366f1' } }
     ], 
     layout:{ name:'preset' },
-    wheelSensitivity: 0.2,
+    // ← ズーム感度アップ
+    wheelSensitivity: 0.45,
+    minZoom: 0.1,
+    maxZoom: 4,
+    boxSelectionEnabled: true
   });
+  
   bindViewportSync(cy);
   bindDragSnap(cy);
+  // 起動時に少し拡大＆中心へ（空でも有害ではない）
+  cy.zoom(1.2);
+  cy.center();
   return cy;
 }
 
