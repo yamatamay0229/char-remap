@@ -1,10 +1,4 @@
-// ui/menubar.js — 上部メニューバーの描画とイベント発火担当
-
-/**
- * [API] メニューバーを描画し、ボタンクリックで app:command を発火する。
- * 使い方: renderMenubar(document.getElementById('menubar'));
- */
-export function renderMenubar(container, initial = {}) {
+export function renderMenubar(container, initial = {}){
   container.innerHTML = `
     <div class="menu-group">
       <button class="menu-btn" data-cmd="newCharacter">＋人物</button>
@@ -17,10 +11,9 @@ export function renderMenubar(container, initial = {}) {
       <button class="menu-btn" data-cmd="loadJson">読み込み</button>
     </div>
     <div class="menu-group" style="margin-left:auto">
-      <button class="menu-btn" data-cmd="toggleSidebar" title="サイドバーの表示/非表示">サイドバー</button>
+      <button class="menu-btn" data-cmd="toggleSidebar">サイドバー</button>
       <label class="menu-toggle" title="グリッド表示">
-        <input id="toggle-grid" type="checkbox" ${initial.gridVisible ? 'checked' : ''}>
-        グリッド
+        <input id="toggle-grid" type="checkbox" ${initial.gridVisible ? 'checked' : ''}> グリッド
       </label>
       <label class="menu-toggle" title="グリッド不透明度">
         不透明度
@@ -31,35 +24,28 @@ export function renderMenubar(container, initial = {}) {
     </div>
   `;
 
-  // クリック → app:command(detail:{name})
   container.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-cmd]');
     if (!btn) return;
-    const name = btn.dataset.cmd;
-    document.dispatchEvent(new CustomEvent('app:command', { detail: { name } }));
+    document.dispatchEvent(new CustomEvent('app:command', {
+      detail: { name: btn.dataset.cmd }
+    }));
   });
 
-  // グリッド表示切替
   const gridToggle = container.querySelector('#toggle-grid');
   if (gridToggle) {
     gridToggle.addEventListener('change', () => {
       document.dispatchEvent(new CustomEvent('app:command', {
-        detail: { name: 'gridVisible', value: gridToggle.checked }
+        detail: { name:'gridVisible', value: gridToggle.checked }
       }));
     });
   }
-
-  // 不透明度（range/num 双方向同期）
   const $range = container.querySelector('#grid-opacity-range');
   const $num   = container.querySelector('#grid-opacity-num');
-  const emit = (v) => {
-    document.dispatchEvent(new CustomEvent('app:command', {
-      detail: { name: 'gridOpacity', value: Number(v) }
-    }));
-  };
-  if ($range && $num) {
-    const sync = (v) => { $range.value = v; $num.value = v; emit(v); };
-    $range.addEventListener('input', e => sync(e.target.value));
-    $num.addEventListener('input',   e => sync(e.target.value));
+  const emit = (v) => document.dispatchEvent(new CustomEvent('app:command',{ detail:{ name:'gridOpacity', value:Number(v) }}));
+  if ($range && $num){
+    const sync = (v)=>{ $range.value=v; $num.value=v; emit(v); };
+    $range.addEventListener('input', e=>sync(e.target.value));
+    $num.addEventListener('input',   e=>sync(e.target.value));
   }
 }
