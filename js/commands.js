@@ -124,10 +124,10 @@ export function CmdAddRelation(payload){
   };
 }
 
-export function CmdUpdateRelation(id, patch){
+/*export function CmdUpdateRelation(id, patch){
   return {
     do(){
-      const prev = clone(/* 既存取得 */ (/* 簡易 */) (()=> {
+      const prev = clone((()=> {
         // state.index.js に getRelation がある場合それを使う
         // なければリストから拾う
         // ここでは安全に実装
@@ -141,7 +141,7 @@ export function CmdUpdateRelation(id, patch){
       // ここでは getRelation がある前提にして書き直します：
     }
   };
-}
+}*/
 
 // 完成版（getRelation を使う）
 
