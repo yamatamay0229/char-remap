@@ -1,0 +1,29 @@
+/* 上部メニューバー */
+#menubar{
+  display:flex; align-items:center; gap:.5rem;
+  height:var(--menubar-h);
+  padding:0 .75rem; background:var(--panel); border-bottom:1px solid var(--border);
+  position:sticky; top:0; z-index:10;
+}
+.menu-group{display:flex; gap:.25rem; align-items:center}
+.menu-sep{width:1px; height:26px; background:var(--border); margin:0 .5rem}
+.menu-btn{background:var(--btn-bg); border:1px solid var(--btn-border); padding:.4rem .6rem; border-radius:.5rem; cursor:pointer}
+.menu-btn:hover{background:var(--btn-bg-hover)}
+.menu-toggle{display:flex; align-items:center; gap:.35rem}
+
+/* ステージ：キャンバス + 右サイド */
+.stage{display:flex; height:calc(100vh - var(--menubar-h)); min-height:320px}
+#graph{position:relative; flex:1 1 auto; min-width:0; overflow:hidden}
+#grid-canvas{position:absolute; inset:0; pointer-events:none; opacity:.25}
+#sidebar{
+  flex:0 0 320px; width:320px; border-left:1px solid var(--border);
+  background:var(--panel); overflow:auto; padding:.75rem;
+}
+body.sidebar-collapsed #sidebar{width:0; flex-basis:0; padding:0; border-left-color:transparent}
+
+/* サイドバー内部 */
+.sidebar-section{margin-bottom:1rem}
+.sidebar-title{font-weight:600; font-size:14px; margin-bottom:.5rem; opacity:.9}
+.sidebar-empty{opacity:.6; font-size:13px}
+.sidebar-row{display:flex; gap:.5rem; align-items:center; margin:.35rem 0}
+.sidebar-row input[type="text"], .sidebar-row input[type="number"]{width:100%}
