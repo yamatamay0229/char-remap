@@ -30,9 +30,6 @@ export function generateId(prefix = 'id') {
 }
 
 // Selectors
-export function getSheet(id) {
-  return state.sheets.find(s => s.id === id) || null;
-}
 export function getCharacter(id) {
   return state.characters.find(c => String(c.id) === String(id)) || null;
 }
@@ -179,7 +176,9 @@ export function setNodePos(sheetId, charId, pos) {
 }
 export function setEdgeWaypoints(/*sheetId,relId,points*/){ /* TODO */ }
 export function setSheetVisibility(/*sheetId,visible*/){ /* TODO */ }
-export function getSheet(/*id*/){ /* TODO */ }
+export function getSheet(id) {
+  return state.sheets.find(s => s.id === id) || null;
+}
 export function listSheets(){ return snapshot.sheets; }
 
 // Integrity
