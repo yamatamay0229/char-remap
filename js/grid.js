@@ -12,7 +12,10 @@ export function init(container, opts){
   ctx = canvas.getContext('2d');
   resize();
   redraw();
+  // コンテナサイズ変化（サイドバー開閉等）にも追随
   window.addEventListener('resize', () => { resize(); redraw(); });
+  // 初期1フレーム
+  requestAnimationFrame(redraw);
 }
 
 function resize(){
