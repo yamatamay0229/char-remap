@@ -157,9 +157,7 @@ export function fitAll(/*padding*/){ /* TODO */ }
 
 export function bindViewportSync(cy){
   if (!cy) return;
-  cy.on('viewport', () => {
-    // TODO: grid.scheduleRedraw()
-  });
+  cy.on('viewport', () => grid.scheduleRedraw());
 }
 export function bindDragSnap(cy){
   cy.on('dragfree', 'node', (evt) => {
