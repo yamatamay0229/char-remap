@@ -2,6 +2,7 @@
 
 import { setNodePos, getSheet, listCharacters, listRelations } from './state/index.js';
 import { settings } from './settings.js';
+import * as grid from './grid.js';
 
 let cy = null;
 
