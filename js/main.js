@@ -3,7 +3,8 @@
 import { applyTheme, settings, setSetting } from './settings.js';
 import * as grid from './grid.js';
 import { 
-  addNodeVisual, bootCytoscape, applySheet,
+  addNodeVisual, updateNodeVisual,
+	bootCytoscape, applySheet,
   addEdgeVisual, updateEdgeVisual, removeVisualById
 } from './graph.js';
 import { renderMenubar } from './ui/menubar.js';
