@@ -160,7 +160,7 @@ export function createSheet(name = 'Sheet') {
 export function renameSheet(/*id,name*/){ /* TODO */ }
 export function deleteSheet(/*id*/){ /* TODO */ }
 
-/ ==================================================
+// ==================================================
 // 5) setNodePos: 指定シート内で人物の座標を保存
 //    - シート必須
 //    - pos: {x:number, y:number}
