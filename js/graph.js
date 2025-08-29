@@ -79,7 +79,6 @@ export function addNodeVisual(character){
   });
 }
 export function updateNodeVisual(/*id, patch*/){ /* TODO */ }
-export function removeVisualById(/*id*/){ /* TODO */ }
 export function addEdgeVisual(rel){
   if (!cy) return;
   const { id, from, to, label, strength=3, edgeColor='#888888', textColor='#ffffff', mutual=false } = rel;
@@ -112,10 +111,7 @@ export function updateEdgeVisual(id, patch){
   e.data({ ...e.data(), ...dataPatch });
 }
 
-export function removeVisualById(id){
-  if (!cy) return;
-  cy.getElementById(String(id)).remove();
-}
+
 export function centerOn(/*idsOrId*/){ /* TODO */ }
 export function fitAll(/*padding*/){ /* TODO */ }
 
