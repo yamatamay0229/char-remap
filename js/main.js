@@ -16,6 +16,11 @@ import {
   addRelation, updateRelation, removeRelationById,
   createSheet, renameSheet, deleteSheet
 } from './state/index.js';
+import { execute, undo, redo } from './commands.js';
+import {
+  CmdAddCharacter, CmdUpdateCharacter, CmdRemoveCharacter,
+  CmdAddRelation,  CmdUpdateRelation,  CmdRemoveRelation
+} from './commands.js';
 
 applyTheme();
 
@@ -53,52 +58,23 @@ document.addEventListener('app:command', (e) => {
       // 追加/編集/削除（No-Op前提）
       // app:command の switch に差し替え or 追加
     case 'newCharacter': {
-      // 1) stateを更新
-      const id = addCharacter({ name: 'New Character' });
-
-      // 2) 画面中央のモデル座標を計算
-      const ext = cy.extent(); // 可視範囲（モデル座標）
-      const pos = { x: (ext.x1 + ext.x2) / 2, y: (ext.y1 + ext.y2) / 2 };
-
-      // 3) ノードを描画に追加
-      addNodeVisual({ id, name: 'New Character', nodeColor: '#cccccc', textColor: '#111111', pos });
-
-      // 4) 追加ノードを選択
-      cy.$id(id).select();
-      break;
-    }
-    case 'updateCharacter': {
-		  const { id, patch } = rest;         // rest は e.detail の残り
-  		try {
-    		// 1) state を更新
-    		updateCharacter(id, patch || {});
-    		// 2) 見た目を更新（色・ラベルなど）
-    		updateNodeVisual(id, patch || {});
-  		} catch (e) {
-   		 console.warn('[updateCharacter] failed:', e.message || e);
-  		}
+  		// 位置は中央に
+  		const ext = cy.extent();
+  		const pos = { x: (ext.x1 + ext.x2)/2, y: (ext.y1 + ext.y2)/2 };
+  		execute(CmdAddCharacter({ name: 'New Character', pos }));
   		break;
-		}
-
-		case 'removeCharacter': {
+	}
+	case 'updateCharacter': {
+  		const { id, patch } = rest;
+ 		execute(CmdUpdateCharacter(id, patch||{}));
+  		break;
+	}
+	case 'removeCharacter': {
   		const { id } = rest;
-  		try {
-    		// 1) state から削除（関係線/シート座標も掃除される想定）
-    		removeCharacterById(id);
-    		// 2) 画面からノード（と接続エッジ）を削除
-    		if (cy) {
-      		const node = cy.getElementById(String(id));
-      		if (node && !node.empty()) node.remove();
-      		// ※ removeVisualById(id) でもOK（ノード/エッジ共通IDに対応している場合）
-      		// removeVisualById(id);
-    		}
-    		// 3) サイドバーを初期表示に戻す
-    		showEmpty();
-  		} catch (e) {
-    		console.warn('[removeCharacter] failed:', e.message || e);
-  		}
+  		execute(CmdRemoveCharacter(id));
+		showEmpty();
   		break;
-		}
+	}
 
     case 'newRelation': {
       // 明示指定がなければ選択中から拾う
@@ -109,37 +85,20 @@ document.addEventListener('app:command', (e) => {
         from = sels[0].id();
         to   = sels[1].id();
       }
-      try{
-        const id = addRelation({ from, to, label: label||'', strength: strength??3, mutual: !!mutual, edgeColor:'#888888', textColor:'#ffffff' });
-        addEdgeVisual({ id, from, to, label, strength, mutual, edgeColor:'#888888', textColor:'#ffffff' });
-        cy.getElementById(id).select();
-      }catch(e){
-        console.warn('[newRelation] failed:', e.message||e);
-      }
-      break;
-    }
+      execute(CmdAddRelation({ from, to, label: label||'relation', strength: strength??3, mutual: !!mutual, edgeColor:'#888888', textColor:'#ffffff' }));
+  		break;
+	}
 
     case 'updateRelation': {
-      const { id, patch } = rest;
-      try {
-        updateRelation(id, patch||{});
-        updateEdgeVisual(id, patch||{});
-      } catch(e) {
-        console.warn('[updateRelation] failed:', e.message||e);
-      }
-      break;
-    }
-
-    case 'removeRelation': {
-      const { id } = rest;
-      try {
-        removeRelationById(id);
-        removeVisualById(id);
-      } catch(e) {
-        console.warn('[removeRelation] failed:', e.message||e);
-      }
-      break;
-    }
+	  const { id, patch } = rest;
+	  execute(CmdUpdateRelation(id, patch||{}));
+	  break;
+	}
+	case 'removeRelation': {
+	  const { id } = rest;
+	  execute(CmdRemoveRelation(id));
+	  break;
+	}
 
     // グリッド/テーマ/サイドバー
     case 'gridVisible': grid.setVisible(!!rest.value); setSetting('snap', !!rest.value); break;
@@ -156,8 +115,8 @@ document.addEventListener('app:command', (e) => {
     // I/O / Undo
     case 'saveJson': /* TODO io.exportJSON() */ break;
     case 'loadJson': /* TODO io.importJSON() */ break;
-    case 'undo':
-    case 'redo': /* TODO commands */ break;
+    case 'undo': undo(); break;
+	case 'redo': redo(); break;
 
     default: console.debug('[app:command] noop', name, rest);
   	}
