@@ -88,17 +88,12 @@ export function applySheet(sheetId){
 
 export function addNodeVisual(character){
   if (!cy) return;
-  const { id, name, nodeColor, textColor, pos } = character;
+  const { id, name, nodeColor='#e5e7eb', textColor='#111111', image=null, pos } = character;
   cy.add({
     group: 'nodes',
-    data: {
-      id,
-      label: name || id,
-      nodeColor: nodeColor || '#cccccc',
-      textColor: textColor || '#111111'
-    },
+    data: { id, label: name || id, nodeColor, textColor, image },
     position: pos || { x: 0, y: 0 }
-  });
+  }).addClass('with-image'); // クラスは今後の拡張用
 }
 
 export function updateNodeVisual(id, patch){
