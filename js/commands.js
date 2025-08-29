@@ -43,6 +43,7 @@ import {
   addNodeVisual, updateNodeVisual, removeVisualById,
   addEdgeVisual, updateEdgeVisual
 } from './graph.js';
+import { getRelation } from './state/index.js';
 
 // ユーティリティ：ディープコピー
 const clone = (x) => JSON.parse(JSON.stringify(x));
@@ -143,7 +144,6 @@ export function CmdUpdateRelation(id, patch){
 }
 
 // 完成版（getRelation を使う）
-import { getRelation } from './state/index.js';
 
 export function CmdUpdateRelation(id, patch){
   return {
