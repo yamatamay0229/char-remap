@@ -12,7 +12,39 @@ export function bootCytoscape(){
   }
   cy = cytoscape({
     container: document.getElementById('graph'),
-    elements: [], style: [], layout:{ name:'preset' },
+    elements: [], style: [
+      // ノードの基本
+      { selector: 'node', style: {
+        'background-color': 'data(nodeColor)',
+        'label': 'data(label)',
+        'color': 'data(textColor)',
+        'text-valign': 'center',
+        'text-halign': 'center',
+        'font-size': 12,
+        'border-width': 1,
+        'border-color': '#888'
+      }},
+      // エッジの基本
+      { selector: 'edge', style: {
+        'width': 'mapData(strength, 1, 8, 1, 8)',
+        'line-color': 'data(edgeColor)',
+        'target-arrow-color': 'data(edgeColor)',
+        'source-arrow-color': 'data(edgeColor)',
+        'target-arrow-shape': 'triangle',
+        'curve-style': 'bezier',
+        'label': 'data(label)',
+        'color': 'data(textColor)',
+        'text-background-opacity': 0.7,
+        'text-background-color': '#000',
+        'text-background-shape': 'round-rectangle',
+        'text-background-padding': 2
+      }},
+      // 相互フラグで両矢印
+      { selector: 'edge[mutual = 1]', style: {
+        'source-arrow-shape': 'triangle'
+      }},
+    ], 
+    layout:{ name:'preset' },
     wheelSensitivity: 0.2,
   });
   bindViewportSync(cy);
@@ -48,8 +80,42 @@ export function addNodeVisual(character){
 }
 export function updateNodeVisual(/*id, patch*/){ /* TODO */ }
 export function removeVisualById(/*id*/){ /* TODO */ }
-export function addEdgeVisual(/*relation*/){ /* TODO */ }
-export function updateEdgeVisual(/*id, patch*/){ /* TODO */ }
+export function addEdgeVisual(rel){
+  if (!cy) return;
+  const { id, from, to, label, strength=3, edgeColor='#888888', textColor='#ffffff', mutual=false } = rel;
+  cy.add({
+    group: 'edges',
+    data: {
+      id,
+      source: from,
+      target: to,
+      label: label || '',
+      strength,
+      edgeColor,
+      textColor,
+      mutual: mutual ? 1 : 0
+    }
+  });
+}
+
+export function updateEdgeVisual(id, patch){
+  if (!cy) return;
+  const e = cy.getElementById(String(id));
+  if (!e || e.empty()) return;
+  // 端点変更がある場合（めったにない）は一旦削除→再追加でもOKだが、最小は data 更新だけ
+  const dataPatch = {};
+  if ('label' in patch) dataPatch.label = patch.label;
+  if ('strength' in patch) dataPatch.strength = Number(patch.strength);
+  if ('edgeColor' in patch) dataPatch.edgeColor = patch.edgeColor;
+  if ('textColor' in patch) dataPatch.textColor = patch.textColor;
+  if ('mutual' in patch) dataPatch.mutual = patch.mutual ? 1 : 0;
+  e.data({ ...e.data(), ...dataPatch });
+}
+
+export function removeVisualById(id){
+  if (!cy) return;
+  cy.getElementById(String(id)).remove();
+}
 export function centerOn(/*idsOrId*/){ /* TODO */ }
 export function fitAll(/*padding*/){ /* TODO */ }
 
