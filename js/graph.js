@@ -78,7 +78,26 @@ export function addNodeVisual(character){
     position: pos || { x: 0, y: 0 }
   });
 }
-export function updateNodeVisual(/*id, patch*/){ /* TODO */ }
+
+export function updateNodeVisual(id, patch){
+  if (!cy) return;
+  const node = cy.getElementById(String(id));
+  if (!node || node.empty()) return;
+
+  // ラベル更新
+  if (patch.name !== undefined) {
+    node.data('label', patch.name);
+  }
+  // 色更新
+  if (patch.nodeColor !== undefined) {
+    node.style('background-color', patch.nodeColor);
+  }
+  if (patch.textColor !== undefined) {
+    node.style('color', patch.textColor);
+  }
+  // 他に image, attrs など扱いたければ後で拡張
+}
+
 export function addEdgeVisual(rel){
   if (!cy) return;
   const { id, from, to, label, strength=3, edgeColor='#888888', textColor='#ffffff', mutual=false } = rel;
