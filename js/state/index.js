@@ -34,7 +34,9 @@ export function getCharacter(id) {
   return state.characters.find(c => String(c.id) === String(id)) || null;
 }
 export function listCharacters(){ return snapshot.characters; }
-export function getRelation(/*id*/){ /* TODO */ }
+export function getRelation(id){
+  return state.relations.find(r => String(r.id) === String(id)) || null;
+}
 export function listRelations(){ return snapshot.relations; }
 export function listRelationsByNode(/*charId*/){ /* TODO */ }
 export function listRelationsByPair(/*a,b*/){ /* TODO */ }
