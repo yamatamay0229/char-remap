@@ -4,24 +4,23 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>char-relmap</title>
-  <link rel="stylesheet" href="./style.css?v=split1" />
-  <!-- Cytoscape (CDN) -->
+
+  <!-- CSS: 必要に応じて中身を足していく -->
+  <link rel="stylesheet" href="./css/base.css">
+  <link rel="stylesheet" href="./css/layout.css">
+
+  <!-- ライブラリ（使うなら） -->
   <script src="https://unpkg.com/cytoscape@3/dist/cytoscape.min.js"></script>
 </head>
 <body>
-  <!-- メニューバーの入れ物（JSで中身を描画） -->
   <header id="menubar"></header>
-
-  <!-- キャンバス＋サイドバーの2カラム -->
   <div class="stage">
     <main id="graph">
       <canvas id="grid-canvas" aria-hidden="true"></canvas>
     </main>
-    <aside id="sidebar" aria-label="プロパティパネル"></aside>
+    <aside id="sidebar"></aside>
   </div>
-  
-  <main id="graph"><canvas id="grid-canvas" aria-hidden="true"></canvas></main>
 
-  <script type="module" src="./js/main.js?v=split1"></script>
+  <script type="module" src="./js/main.js"></script>
 </body>
 </html>
