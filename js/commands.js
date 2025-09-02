@@ -15,12 +15,14 @@
  *   }
  * }
  */
+const __VER = 'cmds-2025-09-02a';
 
 const stack = []; let idx = -1;
 let index = -1;           // index が実行済み最後
 const LIMIT = 100;
 
 export function execute(cmd){
+  log('EXEC', cmd?.meta);
   // 未来側を捨てる（分岐防止）
   if (index < stack.length - 1) stack.splice(index + 1);
   // 実行
@@ -29,14 +31,18 @@ export function execute(cmd){
   // 上限
   if (stack.length > LIMIT) stack.shift();
   index = stack.length - 1;
+  log('LEN/IDX →', stack.length, index);
 }
 
 export function undo(mode = 'sheet', ctx = {}){
+  log('UNDO', mode, ctx, 'idx=', index);
   if (index < 0) return;
   if (mode === 'global') {
     const e = stack[index];
+    log('→ pick', e.meta);
     e.undo?.(e.undoPayload);
     index--;
+    log('idx→', index);
     return;
   }
 
@@ -49,22 +55,29 @@ export function undo(mode = 'sheet', ctx = {}){
     const isGlobal = m.scope === 'global';
     const isThisSheet = (m.scope === 'sheet' && String(m.sheetId) === target);
     if (isGlobal || isThisSheet) {
+      log('→ pick', m);
       e.undo?.(e.undoPayload);
       index = i - 1;
+      log('idx→', index);
       return;
     }
     i--;
   }
+  log('→ no-match');
 }
 
 export function redo(mode = 'sheet', ctx = {}){
-  if (index >= stack.length - 1) return;
+  const last = stack.length - 1;
+  log('REDO', mode, ctx, 'idx=', index, 'last=', last);
+  if (index >= last) return;
 
   if (mode === 'global') {
     const e = stack[index + 1];
+    log('→ pick', e.meta);
     const redoPayload = e.do?.();
     e.undoPayload = redoPayload;
     index++;
+    log('idx→', index);
     return;
   }
   
@@ -77,18 +90,36 @@ export function redo(mode = 'sheet', ctx = {}){
     const isGlobal = m.scope === 'global';
     const isThisSheet = (m.scope === 'sheet' && String(m.sheetId) === target);
     if (isGlobal || isThisSheet) {
+      log('→ pick', m);
       const redoPayload = e.do?.();
       e.undoPayload = redoPayload;
       index = i;
+      log('idx→', index);
       return;
     }
     i++;
   }
+  log('→ no-match');
 }
 
 export function canUndo(){ return idx >= 0; }
 export function canRedo(){ return idx < stack.length-1; }
 export function clear(){ stack.length = 0; index = -1; }
+
+// コンソールで即見れる簡易ダンプ
+export function historyMeta(){
+  return {
+    ver: __VER,
+    length: stack.length,
+    index,
+    items: stack.map((e,i)=>({ i, meta: e.meta }))
+  };
+}
+
+// ついでに window から触れるように
+if (typeof window !== 'undefined') {
+  window.__hist = historyMeta;
+}
 
 // ===== 代表コマンド群 =====
 import {
@@ -259,18 +290,5 @@ export function EntryRemoveRelation(id){
       addEdgeVisual(prev);
     },
     meta:{ kind:'relation', scope:'global', ids:[id], ts:Date.now() }
-  };
-}
-
-export function historyMeta(){
-  return {
-    length: stack.length,
-    index,
-    items: stack.map((e,i)=>({
-      i,
-      kind: e.meta?.kind,
-      scope: e.meta?.scope,
-      sheet: e.meta?.sheetId
-    }))
   };
 }
