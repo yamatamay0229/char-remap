@@ -162,7 +162,7 @@ export function bindViewportSync(cy){
   if (!cy) return;
   cy.on('viewport', () => grid.scheduleRedraw());
 }
-export function bindDragSnap(cy){
+/*export function bindDragSnap(cy){
   cy.on('dragfree', 'node', (evt) => {
     const n = evt.target;
     const p = n.position();
@@ -173,17 +173,7 @@ export function bindDragSnap(cy){
       console.warn('[dragfree] setNodePos failed', e);
     }
   });
-}
-
-// graph.js（どこか下の方にエクスポートを追加）
-export function setNodePositionVisual(id, pos){
-  try{
-    if (!cy) return;
-    const n = cy.getElementById(String(id));
-    if (n && !n.empty()) n.position(pos);
-  }catch(e){ /* noop */ }
-}
-
+}*/
 export function bindDragSnap(cy){
   const dragStartPos = new Map(); // id -> pos
 
@@ -207,4 +197,13 @@ export function bindDragSnap(cy){
     if (!before || (before.x === after.x && before.y === after.y)) return;
     execute(EntryMoveNode(sheetId, id, before, after));
   });
+}
+
+// graph.js（どこか下の方にエクスポートを追加）
+export function setNodePositionVisual(id, pos){
+  try{
+    if (!cy) return;
+    const n = cy.getElementById(String(id));
+    if (n && !n.empty()) n.position(pos);
+  }catch(e){ /* noop */ }
 }
