@@ -307,3 +307,19 @@ export function EntryRemoveRelation(id){
     meta:{ kind:'relation', scope:'global', ids:[id], ts:Date.now() }
   };
 }
+
+// commands.js のどこか
+import { getSnapshot, setDataFromSnapshot } from './state.js';
+export function EntryReplaceSnapshot(newSnap){
+  const before = getSnapshot();
+  return {
+    do(){
+      setDataFromSnapshot(newSnap);
+      return { before };
+    },
+    undo({ before }){
+      setDataFromSnapshot(before);
+    },
+    meta:{ kind:'io', scope:'global', ts:Date.now() }
+  };
+}
