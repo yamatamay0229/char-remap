@@ -19,7 +19,10 @@ import {
 import { execute, undo, redo } from './commands.js';
 import {
   CmdAddCharacter, CmdUpdateCharacter, CmdRemoveCharacter,
-  CmdAddRelation,  CmdUpdateRelation,  CmdRemoveRelation
+  CmdAddRelation,  CmdUpdateRelation,  CmdRemoveRelation,
+  EntryAddCharacter, EntryUpdateCharacter, EntryRemoveCharacter,
+  EntryAddRelation,  EntryUpdateRelation,  EntryRemoveRelation,
+  EntryMoveNode,     EntryApplyLayout
 } from './commands.js';
 
 applyTheme();
@@ -61,17 +64,17 @@ document.addEventListener('app:command', (e) => {
   		// 位置は中央に
   		const ext = cy.extent();
   		const pos = { x: (ext.x1 + ext.x2)/2, y: (ext.y1 + ext.y2)/2 };
-  		execute(CmdAddCharacter({ name: 'New Character', pos }));
+  		execute(EntryAddCharacter({ name:'New Character', pos }));
   		break;
 	}
 	case 'updateCharacter': {
   		const { id, patch } = rest;
- 		execute(CmdUpdateCharacter(id, patch||{}));
+ 		execute(EntryUpdateCharacter(id, patch||{}));
   		break;
 	}
 	case 'removeCharacter': {
   		const { id } = rest;
-  		execute(CmdRemoveCharacter(id));
+  		execute(EntryRemoveCharacter(id));
 		showEmpty();
   		break;
 	}
@@ -85,18 +88,18 @@ document.addEventListener('app:command', (e) => {
         from = sels[0].id();
         to   = sels[1].id();
       }
-      execute(CmdAddRelation({ from, to, label: label||'relation', strength: strength??3, mutual: !!mutual, edgeColor:'#888888', textColor:'#ffffff' }));
-  		break;
+      execute(EntryAddRelation({ from, to, label: label||'', strength: strength??3, mutual: !!mutual, edgeColor:'#888888', textColor:'#ffffff' }));
+	  break;
 	}
 
     case 'updateRelation': {
 	  const { id, patch } = rest;
-	  execute(CmdUpdateRelation(id, patch||{}));
+	  execute(EntryUpdateRelation(id, patch||{}));
 	  break;
 	}
 	case 'removeRelation': {
 	  const { id } = rest;
-	  execute(CmdRemoveRelation(id));
+	  execute(EntryRemoveRelation(id));
 	  break;
 	}
 
@@ -115,8 +118,14 @@ document.addEventListener('app:command', (e) => {
     // I/O / Undo
     case 'saveJson': /* TODO io.exportJSON() */ break;
     case 'loadJson': /* TODO io.importJSON() */ break;
-    case 'undo': undo(); break;
-	case 'redo': redo(); break;
+    case 'undo': {
+	  undo('sheet', { activeSheetId: settings.activeSheetId || 'default' });
+	  break;
+	}
+	case 'redo': {
+	  redo('sheet', { activeSheetId: settings.activeSheetId || 'default' });
+	  break;
+	}
 
     default: console.debug('[app:command] noop', name, rest);
   	}
