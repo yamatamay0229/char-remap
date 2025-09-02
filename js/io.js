@@ -12,6 +12,24 @@ export function exportJSON(filename){
   URL.revokeObjectURL(a.href);
 }
 
+/** ファイルを選ばせてテキスト取得（パースは呼び出し側で） */
+export function pickAndReadFile(){
+  return new Promise((resolve, reject)=>{
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json';
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (!file) return reject(new Error('ファイル未選択'));
+      const fr = new FileReader();
+      fr.onerror = () => reject(fr.error);
+      fr.onload = () => resolve(String(fr.result));
+      fr.readAsText(file, 'utf-8');
+    };
+    input.click();
+  });
+}
+
 // テキストからインポート（手動インポート）
 export function importJSONText(text){
   const raw = JSON.parse(text);
