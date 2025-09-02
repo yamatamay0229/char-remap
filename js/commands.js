@@ -21,6 +21,8 @@ const stack = []; let idx = -1;
 let index = -1;           // index が実行済み最後
 const LIMIT = 100;
 
+function log(...a){ console.debug('[commands]', ...a); }
+
 export function execute(cmd){
   log('EXEC', cmd?.meta);
   // 未来側を捨てる（分岐防止）
