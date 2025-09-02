@@ -16,7 +16,7 @@ import {
   addRelation, updateRelation, removeRelationById,
   createSheet, renameSheet, deleteSheet
 } from './state/index.js';
-import { execute, undo, redo } from './commands.js';
+import { execute, undo, redo, canUndo, canRedo } from './commands.js';
 import {
   /*CmdAddCharacter, CmdUpdateCharacter, CmdRemoveCharacter,
   CmdAddRelation,  CmdUpdateRelation,  CmdRemoveRelation,*/
@@ -136,3 +136,13 @@ document.addEventListener('app:command', (e) => {
     // TODO: UI通知（トースト等）
   }
 });
+
+// （任意）履歴変化に応じてボタンの活性/非活性を更新
+function refreshUndoRedoButtons(){
+  const $undo = document.querySelector('[data-cmd="undo"]');
+  const $redo = document.querySelector('[data-cmd="redo"]');
+  if ($undo) $undo.disabled = !canUndo();
+  if ($redo) $redo.disabled = !canRedo();
+}
+document.addEventListener('history:changed', refreshUndoRedoButtons);
+window.addEventListener('DOMContentLoaded', refreshUndoRedoButtons);
