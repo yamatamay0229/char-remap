@@ -312,7 +312,7 @@ export function EntryRemoveRelation(id){
 }
 
 // commands.js のどこか
-import { getSnapshot, setDataFromSnapshot } from './state.js';
+import { getSnapshot, setDataFromSnapshot } from './state/index.js';
 export function EntryReplaceSnapshot(newSnap){
   const before = getSnapshot();
   return {
