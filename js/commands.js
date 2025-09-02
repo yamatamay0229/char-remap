@@ -23,25 +23,35 @@ const LIMIT = 100;
 
 function log(...a){ console.debug('[commands]', ...a); }
 
-export function execute(cmd){
-  log('EXEC', cmd?.meta);
+// ▼ 修正：エントリをフラットに積む（{...entry, undoPayload}）＋ meta フォールバック
+export function execute(entry){
+  if (!entry.meta) entry.meta = { kind:'unknown', scope:'global', ts:Date.now() };  // 既存履歴救済
+  log('EXEC', entry.meta);
+
   // 未来側を捨てる（分岐防止）
   if (index < stack.length - 1) stack.splice(index + 1);
+
   // 実行
-  const undoPayload = cmd.do?.();
-  stack.push({ cmd, undoPayload });
+  const undoPayload = entry.do?.();
+
+  // フラットに保存（★ここが最大の修正点）
+  stack.push({ ...entry, undoPayload });
+
   // 上限
   if (stack.length > LIMIT) stack.shift();
   index = stack.length - 1;
   log('LEN/IDX →', stack.length, index);
 }
 
+// ▼ 修正：stack[i] の e に対して e.meta / e.undo を直接参照
 export function undo(mode = 'sheet', ctx = {}){
   log('UNDO', mode, ctx, 'idx=', index);
   if (index < 0) return;
+
   if (mode === 'global') {
     const e = stack[index];
-    log('→ pick', e.meta);
+    const m = e.meta || { scope:'global' };
+    log('→ pick', m);
     e.undo?.(e.undoPayload);
     index--;
     log('idx→', index);
@@ -54,7 +64,8 @@ export function undo(mode = 'sheet', ctx = {}){
   while (i >= 0) {
     const e = stack[i];
     const m = e.meta || {};
-    const isGlobal = m.scope === 'global';
+    const scope = m.scope || 'global';           // フォールバック
+    const isGlobal = scope === 'global';
     const isThisSheet = (m.scope === 'sheet' && String(m.sheetId) === target);
     if (isGlobal || isThisSheet) {
       log('→ pick', m);
@@ -75,7 +86,8 @@ export function redo(mode = 'sheet', ctx = {}){
 
   if (mode === 'global') {
     const e = stack[index + 1];
-    log('→ pick', e.meta);
+    const m = e.meta || { scope:'global' };
+    log('→ pick', m);
     const redoPayload = e.do?.();
     e.undoPayload = redoPayload;
     index++;
@@ -89,8 +101,9 @@ export function redo(mode = 'sheet', ctx = {}){
   while (i <= last) {
     const e = stack[i];
     const m = e.meta || {};
-    const isGlobal = m.scope === 'global';
-    const isThisSheet = (m.scope === 'sheet' && String(m.sheetId) === target);
+    const scope = m.scope || 'global';
+    const isGlobal = scope === 'global';
+    const isThisSheet = (scope === 'sheet' && String(m.sheetId) === target);
     if (isGlobal || isThisSheet) {
       log('→ pick', m);
       const redoPayload = e.do?.();
@@ -104,8 +117,8 @@ export function redo(mode = 'sheet', ctx = {}){
   log('→ no-match');
 }
 
-export function canUndo(){ return idx >= 0; }
-export function canRedo(){ return idx < stack.length-1; }
+export function canUndo(){ return index >= 0; }
+export function canRedo(){ return index < stack.length-1; }
 export function clear(){ stack.length = 0; index = -1; }
 
 // コンソールで即見れる簡易ダンプ
