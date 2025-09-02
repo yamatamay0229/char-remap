@@ -141,7 +141,7 @@ export function EntryApplyLayout(sheetId, diffs /* [{id,from,to}] */){
   };
 }
 
-export function CmdAddCharacter(payload){
+/*export function CmdAddCharacter(payload){
   return {
     do(){
       const id = addCharacter(payload);
