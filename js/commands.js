@@ -1,3 +1,21 @@
+// commands.js — シート対応・単一スタックの Undo/Redo 実装
+// 使い方：execute(Entry*) / undo('sheet',{activeSheetId}) / redo('sheet',{activeSheetId})
+
+/**
+ * Entry 仕様
+ * {
+ *   do:   () => any               // 実行。戻り値は undo に渡される payload
+ *   undo: (payload:any) => void   // 取り消し
+ *   meta: {
+ *     kind: 'move'|'layout'|'character'|'relation'|'group'|'io',
+ *     scope: 'sheet'|'global',
+ *     sheetId?: string,
+ *     ids?: string[],
+ *     ts?: number
+ *   }
+ * }
+ */
+
 const stack = []; let idx = -1;
 let index = -1;           // index が実行済み最後
 const LIMIT = 100;
@@ -13,21 +31,61 @@ export function execute(cmd){
   index = stack.length - 1;
 }
 
-export function undo(){
+export function undo(mode = 'sheet', ctx = {}){
   if (index < 0) return;
-  const { cmd, undoPayload } = stack[index];
-  cmd.undo?.(undoPayload);
-  index--;
+  if (mode === 'global') {
+    const e = stack[index];
+    e.undo?.(e.undoPayload);
+    index--;
+    return;
+  }
+
+  // sheet モード：現在シートに関係あるもの or global を探す
+  const target = String(ctx.activeSheetId ?? '');
+  let i = index;
+  while (i >= 0) {
+    const e = stack[i];
+    const m = e.meta || {};
+    const isGlobal = m.scope === 'global';
+    const isThisSheet = (m.scope === 'sheet' && String(m.sheetId) === target);
+    if (isGlobal || isThisSheet) {
+      e.undo?.(e.undoPayload);
+      index = i - 1;
+      return;
+    }
+    i--;
+  }
 }
 
-export function redo(){
+export function redo(mode = 'sheet', ctx = {}){
   if (index >= stack.length - 1) return;
-  index++;
-  const { cmd } = stack[index];
-  const redoPayload = cmd.do?.();
-  // redo の undoPayload を更新
-  stack[index].undoPayload = redoPayload;
+
+  if (mode === 'global') {
+    const e = stack[index + 1];
+    const redoPayload = e.do?.();
+    e.undoPayload = redoPayload;
+    index++;
+    return;
+  }
+  
+  // sheet モード：現在シートに関係あるもの or global を探す
+  const target = String(ctx.activeSheetId ?? '');
+  let i = index + 1;
+  while (i <= last) {
+    const e = stack[i];
+    const m = e.meta || {};
+    const isGlobal = m.scope === 'global';
+    const isThisSheet = (m.scope === 'sheet' && String(m.sheetId) === target);
+    if (isGlobal || isThisSheet) {
+      const redoPayload = e.do?.();
+      e.undoPayload = redoPayload;
+      index = i;
+      return;
+    }
+    i++;
+  }
 }
+
 export function canUndo(){ return idx >= 0; }
 export function canRedo(){ return idx < stack.length-1; }
 export function clear(){ stack.length = 0; index = -1; }
@@ -37,16 +95,51 @@ import {
   addCharacter, updateCharacter, removeCharacterById,
   getCharacter, listRelationsByNode,
   addRelation, updateRelation, removeRelationById,
-  listSheets, setNodePos
+  getRelation, listSheets, setNodePos
 } from './state/index.js';
 import {
   addNodeVisual, updateNodeVisual, removeVisualById,
-  addEdgeVisual, updateEdgeVisual
+  addEdgeVisual, updateEdgeVisual, setNodePositionVisual
 } from './graph.js';
-import { getRelation } from './state/index.js';
 
 // ユーティリティ：ディープコピー
 const clone = (x) => JSON.parse(JSON.stringify(x));
+
+/** 単ノード移動（ドラッグ1回） */
+export function EntryMoveNode(sheetId, id, fromPos, toPos){
+  const pack = (p)=>({ x: Math.round(p.x), y: Math.round(p.y) });
+  fromPos = pack(fromPos); toPos = pack(toPos);
+
+  const apply = (p) => {
+    try { setNodePos(sheetId, id, p); } catch(e){}
+    try { setNodePositionVisual?.(id, p); } catch(e){}
+  };
+
+  return {
+    do(){ apply(toPos); return { sheetId, id, fromPos, toPos }; },
+    undo({ fromPos }){ apply(fromPos); },
+    meta:{ kind:'move', scope:'sheet', sheetId, ids:[id], ts:Date.now() }
+  };
+}
+
+/** 多数ノードの一括移動（自動配置・物理停止時など） */
+export function EntryApplyLayout(sheetId, diffs /* [{id,from,to}] */){
+  const pack = (p)=>({ x: Math.round(p.x), y: Math.round(p.y) });
+  diffs = (diffs||[]).map(d => ({ id:d.id, from:pack(d.from), to:pack(d.to) }));
+
+  const apply = (key) => {
+    for (const d of diffs) {
+      try { setNodePos(sheetId, d.id, d[key]); } catch(e){}
+      try { setNodePositionVisual?.(d.id, d[key]); } catch(e){}
+    }
+  };
+
+  return {
+    do(){ apply('to'); return { sheetId, diffs }; },
+    undo(){ apply('from'); },
+    meta:{ kind:'layout', scope:'sheet', sheetId, ids:diffs.map(d=>d.id), ts:Date.now() }
+  };
+}
 
 export function CmdAddCharacter(payload){
   return {
@@ -124,27 +217,6 @@ export function CmdAddRelation(payload){
   };
 }
 
-/*export function CmdUpdateRelation(id, patch){
-  return {
-    do(){
-      const prev = clone((()=> {
-        // state.index.js に getRelation がある場合それを使う
-        // なければリストから拾う
-        // ここでは安全に実装
-        try {
-          const { listRelations } = require('./state/index.js'); // ESMでは不可。下の簡易取得に差し替え
-        } catch(e){}
-        // ESM前提：手動で取得
-        const { listRelations } = requireCache(); // ダミー
-      })());
-      // ↑ 取り回しがややこしい場合は state/index.js に getRelation を用意して使ってください
-      // ここでは getRelation がある前提にして書き直します：
-    }
-  };
-}*/
-
-// 完成版（getRelation を使う）
-
 export function CmdUpdateRelation(id, patch){
   return {
     do(){
@@ -177,3 +249,123 @@ export function CmdRemoveRelation(id){
   };
 }
 
+/** 人物追加（グローバル） */
+export function EntryAddCharacter(data){
+  return {
+    do(){
+      const id = addCharacter(data);
+      addNodeVisual({ id, ...data });
+      return { id };
+    },
+    undo({ id }){
+      removeCharacterById(id);
+      removeVisualById(id);
+    },
+    meta:{ kind:'character', scope:'global', ts:Date.now() }
+  };
+}
+
+/** 人物更新（グローバル） */
+export function EntryUpdateCharacter(id, patch){
+  return {
+    do(){
+      const prev = clone(getCharacter(id));
+      updateCharacter(id, patch);
+      updateNodeVisual(id, patch);
+      return { prev };
+    },
+    undo({ prev }){
+      if (!prev) return;
+      updateCharacter(prev.id, prev);
+      updateNodeVisual(prev.id, prev);
+    },
+    meta:{ kind:'character', scope:'global', ids:[id], ts:Date.now() }
+  };
+}
+
+/** 人物削除（グローバル） */
+export function EntryRemoveCharacter(id){
+  return {
+    do(){
+      const char = clone(getCharacter(id));
+      const rels = clone(listRelationsByNode(id));
+      // シート内の座標を保存
+      const posBySheet = {};
+      for (const s of listSheets()) {
+        const p = s.positions?.[id];
+        if (p) posBySheet[s.id] = p;
+      }
+      removeCharacterById(id);
+      removeVisualById(id);
+      return { char, rels, posBySheet };
+    },
+    undo({ char, rels, posBySheet }){
+      if (!char) return;
+      addCharacter(char);
+      addNodeVisual({ id: char.id, name: char.name, nodeColor: char.nodeColor, textColor: char.textColor, image: char.image });
+      // 座標復元
+      for (const [sheetId, pos] of Object.entries(posBySheet||{})) {
+        try { setNodePos(sheetId, char.id, pos); } catch(e){}
+        try { setNodePositionVisual?.(char.id, pos); } catch(e){}
+      }
+      // 関係復元
+      for (const r of (rels||[])) {
+        addRelation(r);
+        addEdgeVisual(r);
+      }
+    },
+    meta:{ kind:'character', scope:'global', ids:[id], ts:Date.now() }
+  };
+}
+
+/** 関係追加（グローバル） */
+export function EntryAddRelation(payload){
+  return {
+    do(){
+      const id = addRelation(payload);
+      addEdgeVisual({ id, ...payload });
+      return { id };
+    },
+    undo({ id }){
+      removeRelationById(id);
+      removeVisualById(id);
+    },
+    meta:{ kind:'relation', scope:'global', ts:Date.now() }
+  };
+}
+
+/** 関係更新（グローバル） */
+export function EntryUpdateRelation(id, patch){
+  return {
+    do(){
+      const prev = clone(getRelation(id));
+      updateRelation(id, patch);
+      updateEdgeVisual(id, patch);
+      return { prev };
+    },
+    undo({ prev }){
+      if (!prev) return;
+      updateRelation(prev.id, prev);
+      updateEdgeVisual(prev.id, prev);
+    },
+    meta:{ kind:'relation', scope:'global', ids:[id], ts:Date.now() }
+  };
+}
+
+/** 関係削除（グローバル） */
+export function EntryRemoveRelation(id){
+  return {
+    do(){
+      const prev = clone(getRelation(id));
+      removeRelationById(id);
+      removeVisualById(id);
+      return { prev };
+    },
+    undo({ prev }){
+      if (!prev) return;
+      addRelation(prev);
+      addEdgeVisual(prev);
+    },
+    meta:{ kind:'relation', scope:'global', ids:[id], ts:Date.now() }
+  };
+}
