@@ -5,6 +5,7 @@ import { settings } from './settings.js';
 import * as grid from './grid.js';
 import { execute } from './commands.js';
 import { EntryMoveNode } from './commands.js';
+import { state } from './state.js';
 
 let cy = null;
 
@@ -75,6 +76,33 @@ export function bootCytoscape(){
   cy.zoom(1.2);
   cy.center();
   return cy;
+}
+
+/** ステート全体から elements を作り直す（Load/Undo/Redo で使用） */
+export function rebuildFromState(){
+  if (!cy) return;
+  cy.elements().remove();
+
+  // アクティブシートの座標を優先
+  const sheetId = settings.activeSheetId || (state.sheets[0]?.id ?? 'default');
+  const pos = state.sheets.find(s=>s.id===sheetId)?.positions || {};
+
+  // ノード
+  const nodes = state.characters.map(c => ({
+    group: 'nodes',
+    data: { id: String(c.id), label: c.name, ...c },
+    position: pos[c.id] || c.pos || { x: 0, y: 0 }
+  }));
+
+  // エッジ
+  const edges = state.relations.map(r => ({
+    group: 'edges',
+    data: { id: String(r.id), source: String(r.from), target: String(r.to), label: r.label || '', ...r }
+  }));
+
+  cy.add(nodes);
+  cy.add(edges);
+  cy.layout({ name: 'preset' }).run();
 }
 
 // シート適用（座標だけ反映）
