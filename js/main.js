@@ -119,10 +119,12 @@ document.addEventListener('app:command', (e) => {
     case 'saveJson': /* TODO io.exportJSON() */ break;
     case 'loadJson': /* TODO io.importJSON() */ break;
     case 'undo': {
+		console.debug('[main] undo cmd received');
 	  undo('sheet', { activeSheetId: settings.activeSheetId || 'default' });
 	  break;
 	}
 	case 'redo': {
+		console.debug('[main] redo cmd received');
 	  redo('sheet', { activeSheetId: settings.activeSheetId || 'default' });
 	  break;
 	}
