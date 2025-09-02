@@ -55,7 +55,7 @@ if (cy && cy.on) {
 }
 
 // app:command 集約
-document.addEventListener('app:command', (e) => {
+document.addEventListener('app:command', async (e) => {
   const { name, ...rest } = e.detail || {};
   try {
     switch (name) {
