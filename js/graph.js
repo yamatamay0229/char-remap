@@ -3,6 +3,8 @@
 import { setNodePos, getSheet, listCharacters, listRelations } from './state/index.js';
 import { settings } from './settings.js';
 import * as grid from './grid.js';
+import { execute } from './commands.js';
+import { EntryMoveNode } from './commands.js';
 
 let cy = null;
 
@@ -180,4 +182,29 @@ export function setNodePositionVisual(id, pos){
     const n = cy.getElementById(String(id));
     if (n && !n.empty()) n.position(pos);
   }catch(e){ /* noop */ }
+}
+
+export function bindDragSnap(cy){
+  const dragStartPos = new Map(); // id -> pos
+
+  cy.on('grab', 'node', (e)=>{
+    const n = e.target;
+    dragStartPos.set(n.id(), { ...n.position() });
+  });
+
+  cy.on('dragfree', 'node', (e)=>{
+    const n = e.target;
+    const id = n.id();
+    const before = dragStartPos.get(id);
+    const after = { ...n.position() };
+    dragStartPos.delete(id);
+
+    const sheetId = settings.activeSheetId || 'default';
+    // まず state に反映（常に最新を保持）
+    try { setNodePos(sheetId, id, after); } catch(e){}
+
+    // 実際に変化があったときだけ履歴を積む
+    if (!before || (before.x === after.x && before.y === after.y)) return;
+    execute(EntryMoveNode(sheetId, id, before, after));
+  });
 }
