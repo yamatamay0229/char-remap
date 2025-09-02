@@ -141,114 +141,6 @@ export function EntryApplyLayout(sheetId, diffs /* [{id,from,to}] */){
   };
 }
 
-/*export function CmdAddCharacter(payload){
-  return {
-    do(){
-      const id = addCharacter(payload);
-      // 初期位置は呼び出し側で渡していてもOK。見た目反映:
-      addNodeVisual({ id, name: payload.name || id, nodeColor: payload.nodeColor, textColor: payload.textColor, image: payload.image, pos: payload.pos });
-      return { id };
-    },
-    undo({ id }){
-      // 関連エッジは state の removeCharacterById で消える
-      removeCharacterById(id);
-      removeVisualById(id);
-    }
-  };
-}
-
-export function CmdUpdateCharacter(id, patch){
-  return {
-    do(){
-      const prev = clone(getCharacter(id));
-      updateCharacter(id, patch);
-      updateNodeVisual(id, patch);
-      return { prev };
-    },
-    undo({ prev }){
-      if (!prev) return;
-      updateCharacter(prev.id, prev);
-      updateNodeVisual(prev.id, prev);
-    }
-  };
-}
-
-export function CmdRemoveCharacter(id){
-  return {
-    do(){
-      // 復元用に人物＋紐づく関係＋各シートの座標を保存
-      const char = clone(getCharacter(id));
-      const rels = clone(listRelationsByNode(id));
-      const sheets = clone(listSheets()); // positions を取り出す
-      const positions = {};
-      sheets.forEach(s => { if (s.positions?.[id]) positions[s.id] = s.positions[id]; });
-
-      removeCharacterById(id);
-      removeVisualById(id);
-      return { char, rels, positions };
-    },
-    undo({ char, rels, positions }){
-      if (!char) return;
-      // 人物復元
-      addCharacter(char);
-      addNodeVisual({ id: char.id, name: char.name, nodeColor: char.nodeColor, textColor: char.textColor, image: char.image });
-      // 座標復元
-      Object.entries(positions||{}).forEach(([sheetId, pos]) => setNodePos(sheetId, char.id, pos));
-      // 関係復元
-      (rels||[]).forEach(r => {
-        addRelation(r);
-        addEdgeVisual(r);
-      });
-    }
-  };
-}
-
-export function CmdAddRelation(payload){
-  return {
-    do(){
-      const id = addRelation(payload);
-      addEdgeVisual({ id, ...payload });
-      return { id };
-    },
-    undo({ id }){
-      removeRelationById(id);
-      removeVisualById(id);
-    }
-  };
-}
-
-export function CmdUpdateRelation(id, patch){
-  return {
-    do(){
-      const prev = clone(getRelation(id));
-      updateRelation(id, patch);
-      updateEdgeVisual(id, patch);
-      return { prev };
-    },
-    undo({ prev }){
-      if (!prev) return;
-      updateRelation(prev.id, prev);
-      updateEdgeVisual(prev.id, prev);
-    }
-  };
-}
-
-export function CmdRemoveRelation(id){
-  return {
-    do(){
-      const prev = clone(getRelation(id));
-      removeRelationById(id);
-      removeVisualById(id);
-      return { prev };
-    },
-    undo({ prev }){
-      if (!prev) return;
-      addRelation(prev);
-      addEdgeVisual(prev);
-    }
-  };
-}
-
 /** 人物追加（グローバル） */
 export function EntryAddCharacter(data){
   return {
@@ -367,5 +259,18 @@ export function EntryRemoveRelation(id){
       addEdgeVisual(prev);
     },
     meta:{ kind:'relation', scope:'global', ids:[id], ts:Date.now() }
+  };
+}
+
+export function historyMeta(){
+  return {
+    length: stack.length,
+    index,
+    items: stack.map((e,i)=>({
+      i,
+      kind: e.meta?.kind,
+      scope: e.meta?.scope,
+      sheet: e.meta?.sheetId
+    }))
   };
 }
