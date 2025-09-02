@@ -22,8 +22,9 @@ import {
   CmdAddRelation,  CmdUpdateRelation,  CmdRemoveRelation,*/
   EntryAddCharacter, EntryUpdateCharacter, EntryRemoveCharacter,
   EntryAddRelation,  EntryUpdateRelation,  EntryRemoveRelation,
-  EntryMoveNode,     EntryApplyLayout
+  EntryMoveNode,     EntryApplyLayout, EntryReplaceSnapshot
 } from './commands.js';
+import { exportJSON, pickAndReadFile } from './io.js';
 
 applyTheme();
 
@@ -116,8 +117,21 @@ document.addEventListener('app:command', (e) => {
     case 'deleteSheet': deleteSheet(rest.id); break;
 
     // I/O / Undo
-    case 'saveJson': /* TODO io.exportJSON() */ break;
-    case 'loadJson': /* TODO io.importJSON() */ break;
+    case 'saveJson': {
+		exportJSON();               // 状態は変えないので Undo 対象外
+      break;
+	}
+    case 'loadJson': {
+		try {
+        const text = await pickAndReadFile();   // ファイル選択→読み込み
+        const parsed = JSON.parse(text);        // ここで例外なら catch へ
+        execute(EntryReplaceSnapshot(parsed));  // 取り消し可能に置換
+      } catch (err) {
+        console.warn('[loadJson] failed:', err?.message || err);
+        // 必要ならUIにエラー表示
+      }
+      break;
+	}
     case 'undo': {
 		console.debug('[main] undo cmd received');
 	  undo('sheet', { activeSheetId: settings.activeSheetId || 'default' });
