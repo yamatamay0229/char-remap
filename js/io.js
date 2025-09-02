@@ -1,5 +1,5 @@
 // io.js —— JSON入出力とローカル自動保存
-import { getSnapshot, setDataFromSnapshot, CURRENT_VERSION } from './state.js';
+import { getSnapshot, setDataFromSnapshot, CURRENT_VERSION } from './state.iindex.js';
 
 // ファイルダウンロード（手動エクスポート）
 export function exportJSON(filename){
