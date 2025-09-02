@@ -313,15 +313,18 @@ export function EntryRemoveRelation(id){
 
 // commands.js のどこか
 import { getSnapshot, setDataFromSnapshot } from './state/index.js';
+import { rebuildFromState } from './graph.js'; // 全面再描画（後述）
 export function EntryReplaceSnapshot(newSnap){
   const before = getSnapshot();
   return {
     do(){
       setDataFromSnapshot(newSnap);
+      rebuildFromState();                 // ← 画面を最新データに再構築
       return { before };
     },
     undo({ before }){
       setDataFromSnapshot(before);
+      rebuildFromState();
     },
     meta:{ kind:'io', scope:'global', ts:Date.now() }
   };
