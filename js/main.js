@@ -18,8 +18,8 @@ import {
 } from './state/index.js';
 import { execute, undo, redo } from './commands.js';
 import {
-  CmdAddCharacter, CmdUpdateCharacter, CmdRemoveCharacter,
-  CmdAddRelation,  CmdUpdateRelation,  CmdRemoveRelation,
+  /*CmdAddCharacter, CmdUpdateCharacter, CmdRemoveCharacter,
+  CmdAddRelation,  CmdUpdateRelation,  CmdRemoveRelation,*/
   EntryAddCharacter, EntryUpdateCharacter, EntryRemoveCharacter,
   EntryAddRelation,  EntryUpdateRelation,  EntryRemoveRelation,
   EntryMoveNode,     EntryApplyLayout
