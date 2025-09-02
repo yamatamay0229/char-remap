@@ -41,6 +41,7 @@ export function execute(entry){
   if (stack.length > LIMIT) stack.shift();
   index = stack.length - 1;
   log('LEN/IDX →', stack.length, index);
+  notifyHistoryChange();
 }
 
 // ▼ 修正：stack[i] の e に対して e.meta / e.undo を直接参照
@@ -77,6 +78,7 @@ export function undo(mode = 'sheet', ctx = {}){
     i--;
   }
   log('→ no-match');
+  notifyHistoryChange();
 }
 
 export function redo(mode = 'sheet', ctx = {}){
@@ -115,11 +117,12 @@ export function redo(mode = 'sheet', ctx = {}){
     i++;
   }
   log('→ no-match');
+  notifyHistoryChange();
 }
 
 export function canUndo(){ return index >= 0; }
 export function canRedo(){ return index < stack.length-1; }
-export function clear(){ stack.length = 0; index = -1; }
+export function clear(){ stack.length = 0; index = -1; notifyHistoryChange(); }
 
 // コンソールで即見れる簡易ダンプ
 export function historyMeta(){
@@ -322,4 +325,11 @@ export function EntryReplaceSnapshot(newSnap){
     },
     meta:{ kind:'io', scope:'global', ts:Date.now() }
   };
+}
+// 末尾近くに共通通知関数を追加
+function notifyHistoryChange(){
+  try {
+    const ev = new CustomEvent('history:changed', { detail: { /* 必要ならメタ入れる */ } });
+    document.dispatchEvent(ev);
+  } catch(e){}
 }
