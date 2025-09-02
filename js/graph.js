@@ -172,3 +172,12 @@ export function bindDragSnap(cy){
     }
   });
 }
+
+// graph.js（どこか下の方にエクスポートを追加）
+export function setNodePositionVisual(id, pos){
+  try{
+    if (!cy) return;
+    const n = cy.getElementById(String(id));
+    if (n && !n.empty()) n.position(pos);
+  }catch(e){ /* noop */ }
+}
