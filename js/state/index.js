@@ -8,23 +8,90 @@ const snapshot = {
   groups: [],          // {id,name,color?,members[]}
   sheets: [ { id:'default', name:'Default', positions:{}, waypoints:{}, visible:{} } ],
 };
-// ---- 最小ストア ----
+export const CURRENT_VERSION = 2;
+
 export const state = {
-  version: 1,
-  characterTags: [],        // 例: ["性格","体格"]
-  characters: [],           // [{ id,name,image,nodeColor,textColor,attrs?,pos? }]
-  relations: [],            // [{ id,from,to,label,strength,type,mutual,edgeColor,textColor }]
-  groups: [],               // [{ id,name,color,members:string[] }]
-  sheets: [                 // シートは表示状態（座標/可視/経路）だけを持つ
-    { id: 'default', name: 'Default', positions: {}, waypoints: {}, visible: {} }
-  ],
+  version: CURRENT_VERSION,
+  characterTags: [],
+  characters: [],   // {id,name,image?,nodeColor?,textColor?,attrs?, ...}
+  relations: [],    // {id,from,to,label?,strength?,type?,mutual?,edgeColor?,textColor?}
+  groups: [],       // {id,name,color?,members:[]}
+  sheets: []        // {id,name,positions:{[charId]:{x,y}},waypoints:{[relId]:[{x,y}]},visible:{}}
 };
 
 // ---- ヘルパ ----
 let _seq = 1;
-export function getSnapshot(){ return snapshot; }
+// ディープコピーで返す
+export function getSnapshot(){
+  return JSON.parse(JSON.stringify({
+    app: 'char-relmap',
+    version: state.version ?? CURRENT_VERSION,
+    createdAt: state.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    characterTags: state.characterTags,
+    characters: state.characters,
+    relations: state.relations,
+    groups: state.groups,
+    sheets: state.sheets
+  }));
+}
+
+// 外部データの受け入れ口（migrate → validate → set）
+export function setDataFromSnapshot(raw){
+  const snap = migrateSnapshot(raw);
+  const v = validateSnapshot(snap);
+  if (!v.ok) throw new Error('データ不正: ' + v.errors.join('; '));
+
+  state.version = snap.version;
+  state.characterTags = snap.characterTags || [];
+  state.characters    = snap.characters    || [];
+  state.relations     = snap.relations     || [];
+  state.groups        = snap.groups        || [];
+  state.sheets        = snap.sheets        || [];
+}
 export function setData(/*snap*/){ /* TODO: migrate & assign */ }
-export function migrateSnapshot(/*old*/){ /* TODO */ }
+// 未知の未来バージョンは拒否。古い場合は段階的に上げる。
+export function migrateSnapshot(raw){
+  if (!raw || typeof raw !== 'object') throw new Error('無効なデータ');
+  if (raw.app && raw.app !== 'char-relmap') throw new Error('別アプリのデータです');
+  let snap = JSON.parse(JSON.stringify(raw));
+  let v = Number(snap.version || 1);
+
+  if (v > CURRENT_VERSION) {
+    throw new Error(`このアプリ（v${CURRENT_VERSION}) では v${v} は開けません`);
+  }
+  while (v < CURRENT_VERSION) {
+    const fn = migrations[v];
+    if (!fn) throw new Error(`v${v} から v${v+1} へのマイグレーション未実装`);
+    snap = fn(snap);
+    v = Number(snap.version);
+  }
+  // 最終版の形を最低限整える
+  snap.app = 'char-relmap';
+  snap.version = CURRENT_VERSION;
+  snap.characterTags ||= [];
+  snap.characters    ||= [];
+  snap.relations     ||= [];
+  snap.groups        ||= [];
+  snap.sheets        ||= [];
+  return snap;
+}
+
+// 超軽量バリデーション（必要に応じて強化）
+export function validateSnapshot(snap){
+  const errors = [];
+  if (snap.app !== 'char-relmap') errors.push('appが不一致');
+  if (typeof snap.version !== 'number') errors.push('versionが数値でない');
+  const id = x => typeof x === 'string' && x.length>0;
+
+  for (const c of (snap.characters||[])) {
+    if (!id(String(c.id||c.name))) errors.push('character.id が無い');
+  }
+  for (const r of (snap.relations||[])) {
+    if (!id(String(r.from)) || !id(String(r.to))) errors.push('relation.from/to が無い');
+  }
+  return { ok: errors.length===0, errors };
+}
 export function generateId(prefix = 'id') {
   return `${prefix}_${(_seq++).toString(36)}`;
 }
