@@ -16,7 +16,10 @@ export const state = {
   characters: [],   // {id,name,image?,nodeColor?,textColor?,attrs?, ...}
   relations: [],    // {id,from,to,label?,strength?,type?,mutual?,edgeColor?,textColor?}
   groups: [],       // {id,name,color?,members:[]}
-  sheets: []        // {id,name,positions:{[charId]:{x,y}},waypoints:{[relId]:[{x,y}]},visible:{}}
+  sheets: [
+    { id:'sheet_default', name:'Default',
+      positions:{}, waypoints:{}, visible:{} }
+  ]        // {id,name,positions:{[charId]:{x,y}},waypoints:{[relId]:[{x,y}]},visible:{}}
 };
 
 // ---- ヘルパ ----
